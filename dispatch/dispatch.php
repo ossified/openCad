@@ -46,7 +46,11 @@
     <link href="../vendors/datatables.net-fixedheader-bs/css/fixedHeader.bootstrap.min.css" rel="stylesheet">
     <link href="../vendors/datatables.net-responsive-bs/css/responsive.bootstrap.min.css" rel="stylesheet">
     <link href="../vendors/datatables.net-scroller-bs/css/scroller.bootstrap.min.css" rel="stylesheet">
-    <link href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" rel="Stylesheet"></link>
+    <link href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" rel="Stylesheet"></link>
+    <!-- PNotify -->
+    <link href="../vendors/pnotify/dist/pnotify.css" rel="stylesheet">
+    <link href="../vendors/pnotify/dist/pnotify.buttons.css" rel="stylesheet">
+    <link href="../vendors/pnotify/dist/pnotify.nonblock.css" rel="stylesheet">
     
 
     <!-- Custom Theme Style -->
@@ -198,8 +202,10 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                      <?php //getActiveCalls();?>
-                      <div class="alert alert-info"><span>No active calls</span></div>
+                      <div id="noCallsAlertHolder">
+                        <?php getActiveCalls();?>
+                        <span id="noCallsAlertSpan"></span>
+                      </div>
                   </div>
                   <!-- ./ x_content -->
                   <div class="x_footer">
@@ -212,12 +218,13 @@
             </div>
             <!-- ./ row -->
 
+            <?php /*Removing for now
             <div class="clearfix"></div>
             <div class="row">
               <div class="col-md-4 col-sm-4 col-xs-4">
                 <div class="x_panel">
                   <div class="x_title">
-                    <h2>Dispatchers</h2>
+                    <h2>Active Dispatchers</h2>
                     <ul class="nav navbar-right panel_toolbox">
                       <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
                     </ul>
@@ -232,8 +239,11 @@
                 <!-- ./ x_panel -->
               </div>
               <!-- ./ col-md-2 col-sm-2 col-xs-2 -->
+              */?>
 
-              <div class="col-md-4 col-sm-4 col-xs-4">
+            <div class="clearfix"></div>
+            <div class="row">
+              <div class="col-md-6 col-sm-6 col-xs-6">
                 <div class="x_panel">
                   <div class="x_title">
                     <h2>Available Units</h2>
@@ -244,16 +254,15 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                    <div class="alert alert-danger"><span>No active units</span></div>
                       <?php getAvailableUnits();?>
                   </div>
                   <!-- ./ x_content -->
                 </div>
                 <!-- ./ x_panel -->
               </div>
-              <!-- ./ col-md-4 col-sm-4 col-xs-4 -->
+              <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
 
-                <div class="col-md-4 col-sm-4 col-xs-4">
+                <div class="col-md-6 col-sm-6 col-xs-6">
                     <div class="x_panel">
                     <div class="x_title">
                         <h2>Unavailable Units</h2>
@@ -264,14 +273,13 @@
                     </div>
                     <!-- ./ x_title -->
                     <div class="x_content">
-                      <div class="alert alert-info"><span>No unavailable units</span></div>
                         <?php getUnAvailableUnits();?>
                     </div>
                     <!-- ./ x_content -->
                     </div>
                     <!-- ./ x_panel -->
                 </div>
-                <!-- ./ col-md-4 col-sm-4 col-xs-4 -->
+                <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
             </div>
             <!-- ./ row -->        
 
@@ -318,7 +326,7 @@
                   <!-- ./ x_title -->
                   <div class="x_content">
                       <div class="input-group">
-                      <input type="text" name="ncic_plate" class="form-control" id="ncic_plate" placeholder="License Plate, (ABC123)"/>
+                      <input type="text" name="ncic_plate" class="form-control" id="ncic_plate" value="abc123" placeholder="License Plate, (ABC123)"/>
                         <span class="input-group-btn">
                           <button type="button" class="btn btn-primary" id="ncic_plate_btn">Send</button>
                         </span>
@@ -462,8 +470,7 @@
                 <label class="col-lg-2 control-label">Incident Type</label>
                 <div class="col-lg-10">
                   <select class="form-control selectpicker" data-live-search="true" name="call_type">
-                    <option>Test</option>
-                    <option>10-11</option>
+                    <?php getCodesNcic();?>
                   </select>
                 </div>
                 <!-- ./ col-sm-9 -->
@@ -542,19 +549,81 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/js/bootstrap-select.min.js"></script>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.min.css">
-    -<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    
+    <!-- PNotify -->
+    <script src="../vendors/pnotify/dist/pnotify.js"></script>
+    <script src="../vendors/pnotify/dist/pnotify.buttons.js"></script>
+    <script src="../vendors/pnotify/dist/pnotify.nonblock.js"></script>
+    
     
     
     <script>
     $(document).ready(function() {
-        $('#pendingUsers').DataTable({
-            paging: false,
-            searching: false
-        });
-
         $(function() {
             $('#menu_toggle').click();
         });
+
+        $(function() {
+        $('.clear_call_form').submit(function(e) {
+            e.preventDefault(); // avoid to execute the actual submit of the form.
+            var $tr = $(this).closest('tr');
+            var r = confirm("Are you sure you want to clear this call? This will mark all assigned units on call active.");
+
+            if (r == true)
+            {
+              $.ajax({
+                type: "POST",
+                url: "../actions/dispatchActions.php",
+                data: {
+                    clearCall: 'yes',
+                    callId: $("#"+this.id).serialize()
+                },
+                success: function(response) 
+                {
+                  console.log(response);
+                  $tr.find('td').fadeOut(1000,function(){ 
+                      $tr.remove();                    
+                  });
+
+                  new PNotify({
+                    title: 'Success',
+                    text: 'Successfully cleared call',
+                    type: 'success',
+                    styling: 'bootstrap3'
+                  }); 
+
+                  //Detect if table is now empty
+                  var rowCount = $('#activeCalls tr').length;
+
+                  if (rowCount == "2") // For some reason, this is reporting 2 when the table is empty
+                  {
+                    $('#activeCalls').fadeOut(1000,function(){ 
+                      $('#activeCalls').remove();                    
+                    });
+
+                    $('#noCallsAlertHolder').addClass("alert alert alert-info");
+
+                    $('#noCallsAlertSpan').text("No active calls");
+                  }
+                  else
+                  {
+                    //Do nothing, table can remain
+                  }
+                },
+                error : function(XMLHttpRequest, textStatus, errorThrown)
+                {
+                  console.log("Error");
+                }
+                
+              }); 
+            }
+            else
+            {
+              return; // Do nothing
+            }  
+        });
+      });
     });
 	  </script>
 
@@ -625,7 +694,7 @@
                 }
               }
 
-              if (data['noWarrants'] == "true")
+              if (data['noCitations'] == "true")
               {
                 var citationText = "&nbsp;&nbsp;&nbsp;&nbsp;<span style=\"color: green\">NO CITATIONS</span>";
               }
@@ -635,11 +704,11 @@
                 citationText += "    Count: "+data.citation_name.length+"<br/>";
                 for (i=0; i<data.citation_name.length; i++)
                 {
-                  citationText += "&nbsp;&nbsp;&nbsp;&nbsp;"+data.citation_name[i]+"<br/>";  
+                  citationText += "&nbsp;&nbsp;&nbsp;&nbsp;<span style=\"color: #F78F2B\">"+data.citation_name[i]+"</span><br/>";  
                 }
               }
 
-              var dl_status_text = ""
+              var dl_status_text = "";
               if (data['dl_status'] == "Valid")
               {
                  dl_status_text = "<span style=\"color: green;\">Valid</span>";
@@ -649,8 +718,12 @@
                 dl_status_text = "<span style=\"color: red;\">"+data['dl_status']+"</span>";
               }
 
-              $('#ncic_name_return').append("Name: "+data['first_name']+" "+data['last_name']+"<br/>DOB: "+data['dob']+"<br/>Age: "+data['age']+"<br/>Sex: "+data['sex']+"<br/>Address: "+data['address']+"<br/>Race: "+data['race']+"<br/>DL Status: "+dl_status_text+
-              "<br/>Hair Color: "+data['hair_color']+"<br/>Build: "+data['build']+"<br/><br/>Warrants: <br/>"+warrantText+"<br/>Citations:<br/>"+citationText);
+              $('#ncic_name_return').append("Name: "+data['first_name']+" "+data['last_name']+"<br/>DOB: "+data['dob']+"<br/>Age: "+data['age']+"<br/>Sex: "+data['sex']
+              +"<br/>Race: "+data['race']+"<br/>Hair Color: "+data['hair_color']
+              +"<br/>Build: "+data['build']
+              +"<br/>Address: "+data['address']
+              +"<br/>DL Status: "+dl_status_text
+              +"<br/><br/>Warrants: <br/>"+warrantText+"<br/>Citations:<br/>"+citationText);
 
               $("#ncic_name_return").attr("tabindex",-1).focus();
             }
@@ -685,7 +758,7 @@
             }
             else
             {
-              var insurance_status = ""
+              var insurance_status = "";
               if (data['veh_insurance'] == "VALID")
               {
                  insurance_status = "<span style=\"color: green;\">Valid</span>";
@@ -695,7 +768,7 @@
                 insurance_status = "<span style=\"color: red;\">"+data['veh_insurance']+"</span>";
               }
 
-              var notes = ""
+              var notes = "";
               if (data['notes'] == "")
               {
                  notes = "NO VEHICLE NOTES";
@@ -705,8 +778,19 @@
                 notes = "<span style=\"font-weight: bold;\">"+data['notes']+"</span>";
               }
 
+              var flags = "";
+              if (data['flags'] == "NONE")
+              {
+                 flags = "<span style=\"color: green;\">None</span>";
+              }
+              else
+              {
+                flags = "<span style=\"color: red;\">"+data['flags']+"</span>";
+              }
+
+
               $('#ncic_plate_return').append("Plate: "+data['plate']+"<br/>Color: "+data['veh_color']+"<br/>Make: "+data['veh_make']+"<br/>Model: "+data['veh_model']+"<br/>Owner: "+data['veh_ro']
-              +"<br/>Insurance: "+insurance_status+"<br/><br/>Notes: "+notes);
+              +"<br/>Insurance: "+insurance_status+"<br/>Flags: "+flags+"<br/><br/>Notes: "+notes);
 
               $("#ncic_plate_return").attr("tabindex",-1).focus();
             }

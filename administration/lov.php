@@ -105,6 +105,12 @@
                       <li><a href="admin.php">Dashboard</a></li>
                       <li><a href="userManagement.php">User Management</a></li>
                       <li class="current-page"><a href="javascript:void(0)">List of Values Management</a></li>
+                      <li><a href="../actions/direction.php">CAD Direction Page</a></li>
+                    </ul>
+                  </li>
+                  <li><a><i class="fa fa-database"></i> NCIC Editor <span class="fa fa-chevron-down"></span></a>
+                    <ul class="nav child_menu">
+                      <li><a href="ncicAdmin.php">NCIC Editor</a></li>
                     </ul>
                   </li>
                 </ul>
@@ -166,22 +172,6 @@
               <div class="title_left">
                 <h3>CAD List of Values</h3>
               </div>
-          
-              <?php /* HIUE SEARCH FUNCTION FOR NOW
-              <div class="title_right">
-                <div class="col-md-5 col-sm-5 col-xs-12 form-group pull-right top_search">
-                  <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search for...">
-                    <span class="input-group-btn">
-                      <button class="btn btn-default" type="button">Go!</button>
-                    </span>
-                  </div>
-                  <!-- ./ input-group -->
-                </div>
-                <!-- ./ col-md-5 col-sm-5 col-xs-12 form-group pull-right top_search -->
-              </div>
-              <!-- ./ title_right -->
-              */?>
             </div>
 
             <div class="clearfix"></div>
@@ -201,6 +191,32 @@
                   <!-- ./ x_title -->
                   <div class="x_content">
                      <?php getStreetNames();?> 
+                  </div>
+                  <!-- ./ x_content -->
+                </div>
+                <!-- ./ x_panel -->
+              </div>
+              <!-- ./ col-md-12 col-sm-12 col-xs-12 -->
+            </div>
+            <!-- ./ row -->
+
+            <div class="clearfix"></div>
+            <div class="row">
+              <div class="col-md-12 col-sm-12 col-xs-12">
+                <div class="x_panel">
+                  <div class="x_title">
+                    <h2>Codes</h2>
+                    <ul class="nav navbar-right panel_toolbox">
+                      <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                      </li>
+                      <li><a class="close-link"><i class="fa fa-close"></i></a>
+                      </li>
+                    </ul>
+                    <div class="clearfix"></div>
+                  </div>
+                  <!-- ./ x_title -->
+                  <div class="x_content">
+                     <?php getCodes();?> 
                   </div>
                   <!-- ./ x_content -->
                 </div>
@@ -253,6 +269,10 @@
 		$(document).ready(function() {
 		
 			$('#streets').DataTable({
+                
+			});
+
+      $('#codes').DataTable({
                 
 			});
 
