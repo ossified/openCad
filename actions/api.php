@@ -22,6 +22,13 @@ require($connectionsFileLocation);
 if (isset($_GET['a'])){
     getActiveCalls();
 }
+if (isset($_GET['getCalls'])){
+    getActiveCalls();
+}
+if (isset($_GET['getCallDetails'])){
+    getCallDetails();
+}
+
 
 function getDispatchers()
 {
@@ -252,21 +259,30 @@ function getActiveCalls()
                 <td>'.$row[2].'</td>
                 <td>'.$row[1].'</td>';
 
-                echo '<td>'.$row[3].'/'.$row[4].'/'.$row[5].'</td>
+                echo '<td>'.$row[3].'/'.$row[4].'/'.$row[5].'</td>';
+
+                if (isset($_GET['responder']))
+                {
+                    echo' 
+                    <td>
+                        <button id="'.$row[0].'" class="btn-link" name="call_details_btn" data-toggle="modal" data-target="#callDetails">Details</button>
+                    </td>';
+                }
+                else
+                {
+                echo' 
                 <td>
-                    <form name="clear_call_form" class="clear_call_form" id="cidForm'.$counter.'">
-                        <input id="cidBtn'.$counter.'" type="submit" name="clear_call" class="btn-link" style="color: red;" value="Clear"/>
-                        <input id="cid'.$counter.'" name="cid" type="hidden" value="'.$row[0].'"/>
-                    </form>
-                    <form name="call_details_form" class="call_details_form">
-                        <input type="submit" name="call_details" class="btn-link" value="Details" />
-                        <input name="uid" name="uid" type="hidden" value="'.$row[0].'"/>
-                    </form>
-                    <form name="assign_unit_form" class="assign_unit_form">
-                        <input type="submit" name="assign_unit" class="btn-link" value="Assign"/>
-                        <input name="uid" name="uid" type="hidden" value="'.$row[0].'"/>
-                    </form>    
-                </td>
+                    <button id="'.$row[0].'" class="btn-link" style="color: red;" value="'.$row[0].'" onclick="test('.$row[0].')">Clear</button>
+                    <button id="'.$row[0].'" class="btn-link" name="call_details_btn" data-toggle="modal" data-target="#callDetails">Details</button>
+                    <input name="uid" name="uid" type="hidden" value="'.$row[0].'"/>
+                    <input type="submit" name="assign_unit" class="btn-link" value="Assign"/>
+                </td>';
+                }
+                
+
+
+
+            echo'
             </tr>
             ';
             $counter++;
@@ -280,6 +296,36 @@ function getActiveCalls()
     }
 	mysqli_close($link);
 
+}
+
+function getCallDetails()
+{
+    $callId = $_GET['callId'];
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "SELECT * FROM calls WHERE call_id = \"$callId\"";
+
+    $result=mysqli_query($link, $sql);
+    
+    $encode = array();
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        $encode["call_id"] = $row[0];
+        $encode["call_type"] = $row[2];
+        $encode["call_street1"] = $row[3];
+        $encode["call_street2"] = $row[4];
+        $encode["call_street3"] = $row[5];
+        $encode["narrative"] = $row[6];
+        
+    }
+    
+    echo json_encode($encode);
+    mysqli_close($link);
 }
 
 ?>
