@@ -13,10 +13,24 @@
       $name = $_SESSION['name'];
     }
 
+    if(isset($_SESSION['dispatch']))
+    {
+      
+      if ($_SESSION['dispatch'] == 'YES')
+      {
+          //Do nothing
+      }
+    }
+    else
+    {
+      die("You do not have permission to be here. Request access to dispatch through your administration.");
+    }
+
     $iniContents = parse_ini_file("../properties/config.ini", true); //Gather from config.ini file
     $community = $iniContents['strings']['community'];
 
     include("../actions/api.php");
+    setUnitActive("1");
 
 ?>
 
@@ -51,6 +65,13 @@
     <link href="../vendors/pnotify/dist/pnotify.css" rel="stylesheet">
     <link href="../vendors/pnotify/dist/pnotify.buttons.css" rel="stylesheet">
     <link href="../vendors/pnotify/dist/pnotify.nonblock.css" rel="stylesheet">
+
+    <style>
+    .nopadding {
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    </style>
     
 
     <!-- Custom Theme Style -->
@@ -90,6 +111,12 @@
                   <li class="active"><a><i class="fa fa-home"></i> Home <span class="fa fa-chevron-down"></span></a>
                     <ul class="nav child_menu" style="display: block;">
                       <li class="current-page"><a href="javascript:void(0)">Dashboard</a></li>
+                      <li><a href="../actions/direction.php">CAD Direction Page</a></li>
+                    </ul>
+                  </li>
+                  <li><a><i class="fa fa-clock-o"></i> Stopwatch <span class="fa fa-chevron-down"></span></a>
+                    <ul class="nav child_menu">
+                      <li><a href="https://www.timeanddate.com/stopwatch/" target="_blank">Stopwatch</a></li>
                     </ul>
                   </li>
                 </ul>
@@ -109,7 +136,7 @@
               <a data-toggle="tooltip" data-placement="top">
                 <span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
               </a>
-              <a data-toggle="tooltip" data-placement="top" title="Logout" href="../actions/logout.php">
+              <a data-toggle="tooltip" data-placement="top" title="Logout" href="../actions/logout.php?responder=<?php echo $_SESSION['identifier'];?>">
                 <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
               </a>
             </div>
@@ -132,8 +159,9 @@
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
+                    <li><a href="../profile/profile.php">My Profile</a></li>
                     <li><a href="https://github.com/ossified/openCad/issues">Help</a></li>
-                    <li><a href="../actions/logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
+                    <li><a href="../actions/logout.php?responder=<?php echo $_SESSION['identifier'];?>"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
                   </ul>
                 </li>
 
@@ -155,8 +183,8 @@
             </div>
             <!-- ./ page-title -->
 
+            <?php /* hiding for now
             <div class="clearfix"></div>
-
             <div class="row">
               <div class="col-md-12 col-sm-12 col-xs-12">
                 <div class="x_panel">
@@ -172,9 +200,9 @@
                   <div class="x_content">
                       <div class="col-md-12">
                         <div class="input-group">
-                            <input type="text" name="cli" class="form-control" id="cli"/>
+                            <input type="text" name="cli" class="form-control" id="cli" placeholder="Coming Soon!"/>
                             <span class="input-group-btn">
-                                <button type="button" class="btn btn-primary">Send</button>
+                                <button type="button" class="btn btn-primary" disabled>Send</button>
                             </span>
                         </div>
                         <!-- ./ input-group -->
@@ -188,6 +216,7 @@
               <!-- ./ col-md-12 col-sm-12 col-xs-12 -->
             </div>
             <!-- ./ row -->
+            */?>
 
             <div class="clearfix"></div>
             <div class="row">
@@ -206,13 +235,13 @@
                         <?php //getActiveCalls();?>
                         <span id="noCallsAlertSpan"></span>
                       </div>
-                      <div id="live_calls">
-
-                      </div>
+                      <div id="live_calls"></div>
                   </div>
                   <!-- ./ x_content -->
                   <div class="x_footer">
                     <button class="btn btn-primary" name="new_call_btn" data-toggle="modal" data-target="#newCall">New Call</button>
+                    <button class="btn btn-danger pull-right" onclick="priorityTone('single')" value="0" id="priorityTone">Priority Tone</button>
+                    <button class="btn btn-danger pull-right" onclick="priorityTone('recurring')" value="0" id="recurringTone">10-3 Tone</button>
                   </div>
                 </div>
                 <!-- ./ x_panel -->
@@ -257,7 +286,9 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                      <?php getAvailableUnits();?>
+                      <div id="availableUnits">
+                      
+                      </div>
                   </div>
                   <!-- ./ x_content -->
                 </div>
@@ -276,7 +307,9 @@
                     </div>
                     <!-- ./ x_title -->
                     <div class="x_content">
-                        <?php getUnAvailableUnits();?>
+                        <div id="unAvailableUnits">
+                      
+                      </div>
                     </div>
                     <!-- ./ x_content -->
                     </div>
@@ -494,13 +527,13 @@
               <div class="form-group row">
                 <label class="col-lg-2 control-label">Assign Unit to Call</label>
                 <div class="col-lg-10">
-                  <select class="form-control selectpicker" data-live-search="true" name="unit_1" title="Select a Unit or Leave Blank (Will mark call as Pending)">
+                  <select class="form-control selectpicker unit" data-live-search="true" name="unit_1" id="unit_1" title="Select a Unit or Leave Blank (Will mark call as Pending)">
                     <option></option>
-                    <?php getActiveUnits();?>
+                    
                   </select>
-                  <select class="form-control selectpicker" data-live-search="true" name="unit_2" title="Select a Unit or Leave Blank">
+                  <select class="form-control selectpicker unit" data-live-search="true" name="unit_2" id="unit_2" title="Select a Unit or Leave Blank">
                     <option></option>
-                    <?php getActiveUnits();?>
+                    
                   </select>
                 </div>
                 <!-- ./ col-sm-9 -->
@@ -616,7 +649,8 @@
 
     
 
-
+    <!-- AUDIO TONES -->
+    <audio id="recurringToneAudio" src="../sounds/recurringTone.mp3" preload="auto"></audio>
 
     <!-- jQuery -->
     <script src="../vendors/jquery/dist/jquery.min.js"></script>
@@ -653,41 +687,8 @@
     <script src="../vendors/pnotify/dist/pnotify.buttons.js"></script>
     <script src="../vendors/pnotify/dist/pnotify.nonblock.js"></script>
     
-    
     <script>
-    $('#callDetails').on('show.bs.modal', function(e) {
-      var $modal = $(this), callId = e.relatedTarget.id;
-
-      $.ajax({
-          cache: false,
-          type: 'GET',
-          url: '../actions/api.php',
-          data: {'getCallDetails': 'yes',
-                  'callId' : callId},
-          success: function(result) 
-          {
-            data = JSON.parse(result);
-            console.log(data);
-
-            var mymodal = $('#callDetails');
-            mymodal.find('input[name="call_id_det"]').val(data['call_id']);
-            mymodal.find('input[name="call_type_det"]').val(data['call_type']);
-            mymodal.find('input[name="call_street1_det"]').val(data['call_street1']);
-            mymodal.find('input[name="call_street2_det"]').val(data['call_street2']);
-            mymodal.find('input[name="call_street3_det"]').val(data['call_street3']);
-            mymodal.find('div[name="call_narrative"]').html('');
-            mymodal.find('div[name="call_narrative"]').append(data['narrative']);
-
-            
-            //$('.callDetails #call_type_det').val(data['call_type']);
-            //$('input[name="call_type_det"]').val(data['call_type']);
-            //$('input[name="homeNum"]').val(data['home']); document.getElementById("homeNum").disabled = false;
-
-          },
-
-          error:function(exception){alert('Exeption:'+exception);}
-        });
-    });
+    
     </script>
 
     <script>
@@ -697,322 +698,128 @@
         });
 
         getCalls();
+        getAvailableUnits();
+        getUnAvailableUnits();
+        checkTones();
      
     });
 	  </script>
 
     <script>
-    function getCalls() {
-        $.ajax({
-              type: "GET",
-              url: "../actions/api.php",
-              data: {
-                  getCalls: 'yes'
-              },
-              success: function(response) 
-              {
-                $('#live_calls').html(response);
-                //setTimeout(getCalls, 5000);
-                
-              },
-              error : function(XMLHttpRequest, textStatus, errorThrown)
-              {
-                console.log("Error");
-              }
-              
-            }); 
-      }
+    function testFunction(element)
+    {
+      statusInit = element.className;
+      status = statusInit.split(" ")[0];
+      //If a user has a space in their username, it'll cause some problems. First, we need to split the string by spaces which will generate
+      // an array. Then, we need to remove the first item from the array which is presumably an "action". Then, we join the array again via spaces
+      unit = statusInit.split(" "); 
+      unit.shift();
+      unit = unit.join(' ');
 
-    function test(btn_id) {
-        var $tr = $(this).closest('tr');
-        var r = confirm("Are you sure you want to clear this call? This will mark all assigned units on call active.");
-
-        if (r == true)
+      $.ajax({
+          type: "POST",
+          url: "../actions/api.php",
+          data: {
+              changeStatus: 'yes',
+              unit: unit,
+              status: status
+          },
+          success: function(response) 
+          {
+            console.log(response);
+            if (response == "SUCCESS")
             {
-              $.ajax({
-                type: "POST",
-                url: "../actions/dispatchActions.php",
-                data: {
-                    clearCall: 'yes',
-                    callId: btn_id
-                },
-                success: function(response) 
-                {
-                  console.log(response);
-                  $tr.find('td').fadeOut(1000,function(){ 
-                      $tr.remove();                    
-                  });
-                  
-                  new PNotify({
-                    title: 'Success',
-                    text: 'Successfully cleared call',
-                    type: 'success',
-                    styling: 'bootstrap3'
-                  }); 
-
-                  getCalls();
-                },
-                error : function(XMLHttpRequest, textStatus, errorThrown)
-                {
-                  console.log("Error");
-                }
-                
+              new PNotify({
+                title: 'Success',
+                text: 'Successfully modified user status',
+                type: 'success',
+                styling: 'bootstrap3'
               }); 
             }
-            else
-            {
-              return; // Do nothing
-            }
-      }
-
-      $(function() {
-        $('.newCallForm').submit(function(e) {
-            e.preventDefault(); // avoid to execute the actual submit of the form.
-
-            $.ajax({
-              type: "POST",
-              url: "../actions/dispatchActions.php",
-              data: {
-                  newCall: 'yes',
-                  details: $("#"+this.id).serialize()
-              },
-              success: function(response) 
-              {
-                console.log(response);
-                if (response == "SUCCESS")
-                {
-                  
-                  $('#closeNewCall').trigger('click');
-
-                  new PNotify({
-                    title: 'Success',
-                    text: 'Successfully created call',
-                    type: 'success',
-                    styling: 'bootstrap3'
-                  }); 
-
-                  //Reset the form
-                  $('.newCallForm').find('input:text, textarea').val('');
-                  $('.newCallForm').find('select').val('').selectpicker('refresh');
-
-                  getCalls();
-                }
-                
-              },
-              error : function(XMLHttpRequest, textStatus, errorThrown)
-              {
-                console.log("Error");
-              }
-              
-            }); 
-        });
-      }); 
-    </script>
-
-
-  
-    <!-- TODO: FIX -->
-    <script>
-    $( ".txt-auto" ).autocomplete({
-      source: "../actions/dispatchActions.php",
-      minLength: 2
-    });
-    $( ".txt-auto" ).autocomplete( "option", "appendTo", ".newCallForm" );
-
-    $( ".txt-auto2" ).autocomplete({
-      source: "../actions/dispatchActions.php",
-      minLength: 2
-    });
-    $( ".txt-auto2" ).autocomplete( "option", "appendTo", ".newCallForm" );
-
-    </script>
-  
-    <script>
-    $('#ncic_name_btn').on('click', function(e) {
-
-      var name = document.getElementById('ncic_name').value;
-      $('#ncic_name_return').empty();
-
-      $.ajax({
-          cache: false,
-          type: 'POST',
-          url: '../actions/ncic.php',
-          data: {'ncicName': 'yes',
-                  'ncic_name' : name},
-
-          success: function(result) 
-          {
-            console.log(result);
-            data = JSON.parse(result);
-
-            var textarea = document.getElementById("ncic_name_return");
-
-            if (data['noResult'] == "true")
-            {
-              $('#ncic_name_return').append("<p style=\"color:red;\">NAME NOT FOUND");
-            }
-            else
-            {
-              if (data['noWarrants'] == "true")
-              {
-                var warrantText = "&nbsp;&nbsp;&nbsp;&nbsp;<span style=\"color: green\">NO WARRANTS</span><br/>";
-              }
-              else
-              {
-                var warrantText = "";
-                warrantText += "    Count: "+data.warrant_name.length+"<br/>";
-                for (i=0; i<data.warrant_name.length; i++)
-                {
-                  warrantText += "<span style=\"color:red\">&nbsp;&nbsp;&nbsp;&nbsp;"+data.warrant_name[i] + "</span><br/>";  
-                }
-              }
-
-              if (data['noCitations'] == "true")
-              {
-                var citationText = "&nbsp;&nbsp;&nbsp;&nbsp;<span style=\"color: green\">NO CITATIONS</span>";
-              }
-              else
-              {
-                var citationText = "";
-                citationText += "    Count: "+data.citation_name.length+"<br/>";
-                for (i=0; i<data.citation_name.length; i++)
-                {
-                  citationText += "&nbsp;&nbsp;&nbsp;&nbsp;<span style=\"color: #F78F2B\">"+data.citation_name[i]+"</span><br/>";  
-                }
-              }
-
-              var dl_status_text = "";
-              if (data['dl_status'] == "Valid")
-              {
-                 dl_status_text = "<span style=\"color: green;\">Valid</span>";
-              }
-              else
-              {
-                dl_status_text = "<span style=\"color: red;\">"+data['dl_status']+"</span>";
-              }
-
-              $('#ncic_name_return').append("Name: "+data['first_name']+" "+data['last_name']+"<br/>DOB: "+data['dob']+"<br/>Age: "+data['age']+"<br/>Sex: "+data['sex']
-              +"<br/>Race: "+data['race']+"<br/>Hair Color: "+data['hair_color']
-              +"<br/>Build: "+data['build']
-              +"<br/>Address: "+data['address']
-              +"<br/>DL Status: "+dl_status_text
-              +"<br/><br/>Warrants: <br/>"+warrantText+"<br/>Citations:<br/>"+citationText);
-
-              $("#ncic_name_return").attr("tabindex",-1).focus();
-            }
+            
           },
-
-          error:function(exception){alert('Exeption:'+exception);}
-        });
-    });
-    </script>
-
-    <script>
-    $('#ncic_plate_btn').on('click', function(e) {
-
-      var plate = document.getElementById('ncic_plate').value;
-      $('#ncic_plate_return').empty();
-
-      $.ajax({
-          cache: false,
-          type: 'POST',
-          url: '../actions/ncic.php',
-          data: {'ncicPlate': 'yes',
-                  'ncic_plate' : plate},
-
-          success: function(result) 
+          error : function(XMLHttpRequest, textStatus, errorThrown)
           {
-            console.log(result);
-            data = JSON.parse(result);
-
-            if (data['noResult'] == "true")
-            {
-              $('#ncic_plate_return').append("<p style=\"color:red;\">PLATE NOT FOUND");
-            }
-            else
-            {
-              var insurance_status = "";
-              if (data['veh_insurance'] == "VALID")
-              {
-                 insurance_status = "<span style=\"color: green;\">Valid</span>";
-              }
-              else
-              {
-                insurance_status = "<span style=\"color: red;\">"+data['veh_insurance']+"</span>";
-              }
-
-              var notes = "";
-              if (data['notes'] == "")
-              {
-                 notes = "NO VEHICLE NOTES";
-              }
-              else
-              {
-                notes = "<span style=\"font-weight: bold;\">"+data['notes']+"</span>";
-              }
-
-              var flags = "";
-              if (data['flags'] == "NONE")
-              {
-                 flags = "<span style=\"color: green;\">None</span>";
-              }
-              else
-              {
-                flags = "<span style=\"color: red;\">"+data['flags']+"</span>";
-              }
-
-
-              $('#ncic_plate_return').append("Plate: "+data['plate']+"<br/>Color: "+data['veh_color']+"<br/>Make: "+data['veh_make']+"<br/>Model: "+data['veh_model']+"<br/>Owner: "+data['veh_ro']
-              +"<br/>Insurance: "+insurance_status+"<br/>Flags: "+flags+"<br/><br/>Notes: "+notes);
-
-              $("#ncic_plate_return").attr("tabindex",-1).focus();
-            }
-          },
-
-          error:function(exception){alert('Exeption:'+exception);}
-        });
-    });
+            console.log("Error");
+          }
+          
+        }); 
+    }
     </script>
-
     <script>
-    function toggleFullScreen() {
-        if ((document.fullScreenElement && document.fullScreenElement !== null) ||    
-        (!document.mozFullScreen && !document.webkitIsFullScreen)) {
-            if (document.documentElement.requestFullScreen) {  
-            document.documentElement.requestFullScreen();  
-            } else if (document.documentElement.mozRequestFullScreen) {  
-            document.documentElement.mozRequestFullScreen();  
-            } else if (document.documentElement.webkitRequestFullScreen) {  
-            document.documentElement.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);  
-            }  
-        } else {  
-            if (document.cancelFullScreen) {  
-            document.cancelFullScreen();  
-            } else if (document.mozCancelFullScreen) {  
-            document.mozCancelFullScreen();  
-            } else if (document.webkitCancelFullScreen) {  
-            document.webkitCancelFullScreen();  
-            }  
-        }  
+    function logoutUser(element)
+    {
+      unit = element.className.split(" ");
+      unit.shift(); //Remove the nopadding class
+      unit.shift(); //Remove the logoutUser class
+      unit = unit.join(' '); //Rejoin the array
+      console.log(unit);
+      
+      $.ajax({
+          type: "POST",
+          url: "../actions/api.php",
+          data: {
+              logoutUser: 'yes',
+              unit: unit
+          },
+          success: function(response) 
+          {
+            console.log(response);
+            if (response == "SUCCESS")
+            {
+              new PNotify({
+                title: 'Success',
+                text: 'Successfully logged out user',
+                type: 'success',
+                styling: 'bootstrap3'
+              }); 
+            }
+            
+          },
+          error : function(XMLHttpRequest, textStatus, errorThrown)
+          {
+            console.log("Error");
+          }
+          
+        });
     }
     </script>
 
     <script>
-    $("#ncic_name").keyup(function(event){
-        if(event.keyCode == 13){
-            $("#ncic_name_btn").click();
-        }
-    });
+    
+
+      function getAvailableUnits() {
+        $.ajax({
+              type: "GET",
+              url: "../actions/api.php",
+              data: {
+                  getAvailableUnits: 'yes'
+              },
+              success: function(response) 
+              {
+                $('#availableUnits').html(response);
+                $('#activeUsers').DataTable({
+                  searching: false,
+                  scrollY: "200px",
+                  lengthMenu: [[4, -1], [4, "All"]]
+			          });
+                setTimeout(getAvailableUnits, 5000);
+                
+                
+              },
+              error : function(XMLHttpRequest, textStatus, errorThrown)
+              {
+                console.log("Error");
+              }
+              
+            }); 
+      }
+
+    
     </script>
 
-    <script>
-    $("#ncic_plate").keyup(function(event){
-        if(event.keyCode == 13){
-            $("#ncic_plate_btn").click();
-        }
-    });
-    </script>
-
+    <!-- openCad Script -->
+    <script src="../js/openCad.js"></script>
     <!-- Custom Theme Scripts -->
     <script src="../js/custom.js"></script>
   </body>

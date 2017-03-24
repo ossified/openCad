@@ -28,7 +28,247 @@ if (isset($_GET['getCalls'])){
 if (isset($_GET['getCallDetails'])){
     getCallDetails();
 }
+if (isset($_GET['getAvailableUnits'])){
+    getAvailableUnits();
+}
+if (isset($_GET['getUnAvailableUnits'])){
+    getUnAvailableUnits();
+}
+if (isset($_POST['changeStatus'])){
+    changeStatus();
+}
+if (isset($_GET['getActiveUnits']))
+{
+    getActiveUnits();
+}
+if (isset($_POST['logoutUser']))
+{
+    logoutUser();
+}
+if (isset($_POST['setTone']))
+{
+    setTone();
+}
+if (isset($_GET['checkTones']))
+{
+    checkTones();
+}
 
+//Checks to see if there are any active tones. Certain tones will add a session variable
+function checkTones()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+	if (!$link) {
+		die('Could not connect: ' .mysql_error());
+	}
+
+    $sql = "SELECT * from tones";
+
+    $result=mysqli_query($link, $sql);
+
+
+    $encode = array();
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        // If the tone is set to active
+        if ($row[2] == "1")
+        {
+            $encode[$row[1]] = "ACTIVE";
+        }
+        else if ($row[2] == "0")
+        {
+            $encode[$row[1]] = "INACTIVE";  
+        }
+    }
+    
+    mysqli_close($link);
+    echo json_encode($encode);
+    
+}
+
+function setTone()
+{
+    $tone = $_POST['tone'];
+    $action = $_POST['action'];
+    
+    $status;
+    switch ($action)
+    {
+        case "start":
+            $status = '1';
+            break;
+        case "stop":
+            $status = '0';
+            break;
+    }
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+	if (!$link) {
+		die('Could not connect: ' .mysql_error());
+	}
+
+    $sql = "UPDATE tones SET active = ? WHERE name = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "ss", $status, $tone);
+        $result = mysqli_stmt_execute($stmt);
+
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    } 
+
+    mysqli_close($link);
+    
+    if ($action == "start")
+    {
+        echo "SUCCESS START";
+    }
+    else
+    {
+        echo "SUCCESS STOP";
+    }
+
+}
+
+function logoutUser()
+{
+    $identifier = $_POST['unit'];
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+	if (!$link) {
+		die('Could not connect: ' .mysql_error());
+	}
+
+    $sql = "DELETE FROM active_users WHERE identifier = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $identifier);
+        $result = mysqli_stmt_execute($stmt);
+
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    } 
+
+    mysqli_close($link);
+    echo "SUCCESS";
+
+}
+
+function changeStatus()
+{
+    $unit = $_POST['unit'];
+    $status = $_POST['status'];
+    $statusId;
+    $statusDet;
+    $onCall = false;
+
+    switch ($status)
+    {
+        case "statusMeal":
+            $statusId = '0';
+            $statusDet = '4';
+            break;
+        case "statusOther":
+            $statusId = '0';
+            $statusDet = '2';
+            break;
+        case "statusAvailBusy":
+            $statusId = '1';
+            $statusDet = '1';
+            $onCall = true;
+            break;
+    }
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+	if (!$link) {
+		die('Could not connect: ' .mysql_error());
+	}
+
+	$sql = "UPDATE active_users SET status = ?, status_detail = ? WHERE identifier = ?";
+	
+	try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "iis", $statusId, $statusDet, $unit);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+    if ($onCall)
+    {
+        //Figure out what call they're on
+        $sql = "SELECT call_id FROM calls_users WHERE identifier = \"$unit\"";
+
+        $result=mysqli_query($link, $sql);
+
+        while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+        {
+            $callId = $row[0];
+        }
+
+        //Update the call_notes to say they were cleared
+        $narrativeAdd = date("Y-m-d H:i:s").': Unit Cleared: '.$unit.'<br/>';
+
+        $sql = "UPDATE calls SET call_notes = concat(call_notes, ?) WHERE call_id = ?";
+
+        try {
+            $stmt = mysqli_prepare($link, $sql);
+            mysqli_stmt_bind_param($stmt, "si", $narrativeAdd, $callId);
+            $result = mysqli_stmt_execute($stmt);
+		
+            if ($result == FALSE) {
+                die(mysqli_error($link));
+            }
+        }
+        catch (Exception $e)
+        {
+            die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+        }
+
+
+       //Remove them from the call
+       $sql = "DELETE FROM calls_users WHERE identifier = ?";
+	
+        try {
+            $stmt = mysqli_prepare($link, $sql);
+            mysqli_stmt_bind_param($stmt, "s", $unit);
+            $result = mysqli_stmt_execute($stmt);
+
+            if ($result == FALSE) {
+                die(mysqli_error($link));
+            }
+        }
+        catch (Exception $e)
+        {
+            die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+        } 
+    }
+
+	mysqli_close($link);
+    echo "SUCCESS";
+}
 
 function getDispatchers()
 {
@@ -73,6 +313,45 @@ function getDispatchers()
 
 
 }
+function setUnitActive($dep)
+{
+    $status;
+    switch($dep)
+    {
+        case "1":
+            $status = "2";
+            break;
+        case "2":
+            $status = "1";
+            break;
+    }
+
+    $sql = "INSERT IGNORE INTO active_users (identifier, callsign, status, status_detail) VALUES (?, ?, ?, '1')";
+
+    $identifier = $_SESSION['identifier'];
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+	if (!$link) {
+		die('Could not connect: ' .mysql_error());
+	}
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "ssi", $identifier, $identifier, $status);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+}
+
 function getAvailableUnits()
 {
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
@@ -89,8 +368,10 @@ function getAvailableUnits()
 
     if($num_rows == 0)
     {
-        echo "<div class=\"alert alert-danger\"><span>No active units</span></div>";
+        echo "<div class=\"alert alert-danger\"><span>No available units</span></div>";
     }
+    else
+    {
 
     echo '
             <table id="activeUsers" class="table table-striped table-bordered">
@@ -105,23 +386,31 @@ function getAvailableUnits()
         ';
 
 		
-
+        $counter = 0;
         while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         {
             echo '
             <tr>
                 <td>'.$row[0].'</td>
                 <td>'.$row[1].'</td>
-                <td><a href="#" style="color:red;">Logout</a>&nbsp;&nbsp;&nbsp;<a href="#"">Status</a></td>
+                <td>
+                <div class="dropdown"><button class="btn btn-link dropdown-toggle nopadding" type="button" data-toggle="dropdown">Status <span class="caret"></span></button><ul class="dropdown-menu">
+                    <li><a id="statusMeal'.$counter.'" class="statusMeal '.$row[0].'" onclick="testFunction(this);">10-5/Meal Break</a></li>
+                    <li><a id="statusOther'.$counter.'" class="statusOther '.$row[0].'" onclick="testFunction(this);">10-6/Other</a></li>
+                </ul></div>
+                
+                </td>
                 <input name="uid" type="hidden" value='.$row[0].' />
             </tr>
             ';
+            $counter++;
         }
 
         echo '
             </tbody>
             </table>
         ';
+    }
 	mysqli_close($link);
 }
 
@@ -141,12 +430,12 @@ function getUnAvailableUnits()
 
     if($num_rows == 0)
     {
-        echo "<div class=\"alert alert-danger\"><span>No unavailable units</span></div>";
+        echo "<div class=\"alert alert-info\"><span>No unavailable units</span></div>";
     }
     else
     {
         echo '
-                <table id="activeUsers" class="table table-striped table-bordered">
+                <table id="unAvailableUnitsTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
                     <th>Identifier</th>
@@ -171,7 +460,12 @@ function getUnAvailableUnits()
                         getIndividualStatus($row[1]);
 
                     echo '</td>
-                    <td><a href="#" style="color:red;">Logout</a>&nbsp;&nbsp;&nbsp;<a href="#"">Status</a></td>
+                    
+                    <td><a id="logoutUser" class="nopadding logoutUser '.$row[0].'" onclick="logoutUser(this);" style="color:red; cursor:pointer;">Logout</a>&nbsp;&nbsp;&nbsp;
+                    <div class="dropdown"><button class="btn btn-link dropdown-toggle nopadding" style="display: inline-block; vertical-align:top;" type="button" data-toggle="dropdown">Status <span class="caret"></span></button><ul class="dropdown-menu">
+                        <li><a id="statusAvail" class="statusAvailBusy '.$row[0].'" onclick="testFunction(this);">10-8/Available</a></li>
+                    </ul></div>
+                    </td>
                     <input name="uid" type="hidden" value='.$row[0].' />
                 </tr>
                 ';
@@ -245,10 +539,13 @@ function getActiveUnits()
 
     $result=mysqli_query($link, $query);
 
+    $encode = array();
     while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
-        echo '<option value="'.$row[0].'">'.$row[0].'</option>';
+        $encode[$row[0]] = $row[0];
     }
+    
+    echo json_encode($encode);
 }
 
 function getActiveCalls()
@@ -311,16 +608,13 @@ function getActiveCalls()
                 {
                 echo' 
                 <td>
-                    <button id="'.$row[0].'" class="btn-link" style="color: red;" value="'.$row[0].'" onclick="test('.$row[0].')">Clear</button>
+                    <button id="'.$row[0].'" class="btn-link" style="color: red;" value="'.$row[0].'" onclick="clearCall('.$row[0].')">Clear</button>
                     <button id="'.$row[0].'" class="btn-link" name="call_details_btn" data-toggle="modal" data-target="#callDetails">Details</button>
                     <input name="uid" name="uid" type="hidden" value="'.$row[0].'"/>
                     <input type="submit" name="assign_unit" class="btn-link" value="Assign"/>
                 </td>';
                 }
                 
-
-
-
             echo'
             </tr>
             ';

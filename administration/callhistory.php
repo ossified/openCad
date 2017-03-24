@@ -28,9 +28,14 @@
     $iniContents = parse_ini_file("../properties/config.ini", true); //Gather from config.ini file
     $community = $iniContents['strings']['community'];
     include("../actions/adminActions.php");
-    
-    
-    
+
+    $historyMessage = "";
+    if(isset($_SESSION['historyMessage']))
+    {
+        $historyMessage = $_SESSION['historyMessage'];
+        unset($_SESSION['historyMessage']);
+    }
+     
 ?>
 
 <!DOCTYPE html>
@@ -151,6 +156,7 @@
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
+                    <li><a href="../profile/profile.php">My Profile</a></li>
                     <li><a href="https://github.com/ossified/openCad/issues">Help</a></li>
                     <li><a href="../actions/logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
                   </ul>
@@ -175,7 +181,7 @@
             <div class="clearfix"></div>
             <div class="row">
               <div class="col-md-12 col-sm-12 col-xs-12">
-                <div class="x_panel">
+                <div class="x_panel" id="historyMessage">
                   <div class="x_title">
                     <h2>Call History</h2>
                     <ul class="nav navbar-right panel_toolbox">
@@ -188,6 +194,7 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
+                    <?php echo $historyMessage;?>
                      <?php getCallHistory();?> 
                   </div>
                   <!-- ./ x_content -->

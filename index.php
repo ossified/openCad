@@ -15,13 +15,19 @@
     $iniContents = parse_ini_file("./properties/config.ini", true); //Gather from config.ini file
     $community = $iniContents['strings']['community'];
 
-    $testing = true; //If set to true, will default some data for you
+    $testing = false; //If set to true, will default some data for you
+
+    
 
     session_start();
     $registerError = "";
     $registerSuccess = "";
     $loginMessage = "";
 
+    if (isset($_GET['loggedOut']))
+    {
+        $loginMessage = '<div class="alert alert-success" ><span>You\'ve successfully been logged out</span></div>';  
+    }
     if(isset($_SESSION['register_error']))
     {
         $registerError = '<div class="alert alert-danger" ><span>'.$_SESSION['register_error'].'</span></div>';
@@ -37,6 +43,7 @@
         $loginMessage = '<div class="alert alert-danger" ><span>'.$_SESSION['loginMessageDanger'].'</span></div>';
         unset($_SESSION['loginMessageDanger']);
     }
+
     
 ?>
 
@@ -53,6 +60,8 @@
     <!-- JS -->
     <script type="text/javascript" src="./js/bootstrap-multiselect.js"></script> <!-- Script for MultiSelect Plugin -->
     <script type="text/javascript" src="./js/bootstrap.js"></script><!-- Bootstrap Core JS -->
+    <!-- jQuery -->
+    <script src="./vendors/jquery/dist/jquery.min.js"></script>
 
     <title><?php echo $community;?> CAD System</title>
     <link rel="icon" href="./images/favicon.ico" />
@@ -125,11 +134,12 @@
                                         <label>Division (Can choose more than one)</label>
                                         <select class="form-control" id="division" name="division[]" multiple="multiple" size="6" required>
                                             <option value="communications">Communications (Dispatch)</option>
-                                            <option value="ems">EMS</option>
+                                            <!--<option value="ems">EMS</option>-->
                                             <option value="fire">Fire</option>
                                             <option value="highway" <?php if($testing){echo "selected=\"selected\"";}?>>Highway Patrol</option>
                                             <option value="police">Police</option>
                                             <option value="sheriff">Sheriff</option>
+                                            <option value="civilian">Civilian</option>
                                         </select>
                                     </div>
                                     <!-- ./ form-group -->

@@ -17,6 +17,7 @@
     $community = $iniContents['strings']['community'];
 
     include("../actions/api.php");
+    setUnitActive("2");
 
 ?>
 
@@ -90,17 +91,19 @@
                   <li class="active"><a><i class="fa fa-home"></i> Home <span class="fa fa-chevron-down"></span></a>
                     <ul class="nav child_menu" style="display: block;">
                       <li class="current-page"><a href="javascript:void(0)">Dashboard</a></li>
+                      <li><a href="../actions/direction.php">CAD Direction Page</a></li>
                     </ul>
                   </li>
-                  <li class="active"><a><i class="fa fa-external-link"></i> Links <span class="fa fa-chevron-down"></span></a>
+                  <li><a><i class="fa fa-external-link"></i> Links <span class="fa fa-chevron-down"></span></a>
                     <ul class="nav child_menu">
                       <li><a href="https://goo.gl/forms/rEJOoJvIlCM5svSo1" target="_blank">Police PAL</a></li>
                       <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSdDd1zZGTqUUuGQYuHzmz3TAIWb49y3BDFr8GwRbisLnwiRGg/viewform" target="_blank">Highway PAL</a></li>
                       <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSd26EN4XdgKhbZBEJ16B8cx5LqTNxguh4O3wNggRqqzKOmXzg/viewform" target="_blank">Sheriff PAL</a></li>
                       <li><a href="https://docs.google.com/forms/d/e/1FAIpQLScXgKDn0deB7zgnmBvDRJ7KllHLiQdmahvgQbphxZuNhU6h2g/viewform" target="_blank">Fire PAL</a></li>
+                      <li><a href="https://puu.sh/tRzTt/330b12ab3c.jpg" target="_blank">GTA 5 DOJRP Map</a></li>
                     </ul>
                   </li>
-                  <li class="active"><a><i class="fa fa-hashtag"></i> Callsign <span class="fa fa-chevron-down"></span></a>
+                  <li><a><i class="fa fa-hashtag"></i> Callsign <span class="fa fa-chevron-down"></span></a>
                     <ul class="nav child_menu">
                       <li><a id="changeCallsign" class="btn-link" name="changeCallsign" data-toggle="modal" data-target="#callsign">Change Callsign</a></li>
                     </ul>
@@ -122,7 +125,7 @@
               <a data-toggle="tooltip" data-placement="top">
                 <span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
               </a>
-              <a data-toggle="tooltip" data-placement="top" title="Logout" href="../actions/logout.php">
+              <a data-toggle="tooltip" data-placement="top" title="Logout" href="../actions/logout.php?responder=<?php echo $_SESSION['identifier'];?>">
                 <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
               </a>
             </div>
@@ -145,8 +148,9 @@
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
+                    <li><a href="../profile/profile.php">My Profile</a></li>
                     <li><a href="https://github.com/ossified/openCad/issues">Help</a></li>
-                    <li><a href="../actions/logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
+                    <li><a href="../actions/logout.php?responder=<?php echo $_SESSION['identifier'];?>"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
                   </ul>
                 </li>
 
@@ -239,6 +243,8 @@
               </div>
               <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
               
+              <?php /* Commented out for now
+
               <div class="col-md-6 col-sm-6 col-xs-6">
                 <div class="x_panel">
                   <div class="x_title">
@@ -257,6 +263,9 @@
                 <!-- ./ x_panel -->
               </div>
               <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
+
+              */?>
+
             </div>
             <!-- ./ row -->
 
@@ -429,6 +438,8 @@
     <script src="../vendors/pnotify/dist/pnotify.buttons.js"></script>
     <script src="../vendors/pnotify/dist/pnotify.nonblock.js"></script>
 
+    <audio id="newCallAudio" src="../sounds/New_Dispatch.mp3" preload="auto"></audio>
+
     <script>
     $(document).ready(function() {
         $(function() {
@@ -439,6 +450,15 @@
 
         getCalls();
         getStatus();
+
+        // request permission on page load
+          if (!Notification) {
+            alert('Desktop notifications not available in your browser. Try Chromium.'); 
+            return;
+          }
+
+          if (Notification.permission !== "granted")
+            Notification.requestPermission();
 
     });
 	</script>
@@ -468,59 +488,6 @@
     </script>
 
     <script>
-    function toggleFullScreen() {
-        if ((document.fullScreenElement && document.fullScreenElement !== null) ||    
-        (!document.mozFullScreen && !document.webkitIsFullScreen)) {
-            if (document.documentElement.requestFullScreen) {  
-            document.documentElement.requestFullScreen();  
-            } else if (document.documentElement.mozRequestFullScreen) {  
-            document.documentElement.mozRequestFullScreen();  
-            } else if (document.documentElement.webkitRequestFullScreen) {  
-            document.documentElement.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);  
-            }  
-        } else {  
-            if (document.cancelFullScreen) {  
-            document.cancelFullScreen();  
-            } else if (document.mozCancelFullScreen) {  
-            document.mozCancelFullScreen();  
-            } else if (document.webkitCancelFullScreen) {  
-            document.webkitCancelFullScreen();  
-            }  
-        }  
-    }
-    </script>
-
-    <script>
-    $('#callDetails').on('shown.bs.modal', function(e) {
-      var $modal = $(this), callId = e.relatedTarget.id;
-
-      $.ajax({
-          cache: false,
-          type: 'GET',
-          url: '../actions/api.php',
-          data: {'getCallDetails': 'yes',
-                  'callId' : callId},
-          success: function(result) 
-          {
-            data = JSON.parse(result);
-
-            var mymodal = $('#callDetails');
-            mymodal.find('input[name="call_id_det"]').val(data['call_id']);
-            mymodal.find('input[name="call_type_det"]').val(data['call_type']);
-            mymodal.find('input[name="call_street1_det"]').val(data['call_street1']);
-            mymodal.find('input[name="call_street2_det"]').val(data['call_street2']);
-            mymodal.find('input[name="call_street3_det"]').val(data['call_street3']);
-            mymodal.find('div[name="call_narrative"]').html('');
-            mymodal.find('div[name="call_narrative"]').append(data['narrative']);
-
-          },
-
-          error:function(exception){alert('Exeption:'+exception);}
-        });
-    });
-    </script>
-
-    <script>
     $('#callsign').on('shown.bs.modal', function(e) {
         $('#callsign').find('input[name="callsign"]').val('<?php echo $_SESSION['identifier'];?>');
     });
@@ -540,6 +507,7 @@
               },
               success: function(response) 
               {
+                console.log(response);
                 
                 if (response.match("^Duplicate"))
                 {
@@ -611,6 +579,36 @@
         },
         success: function(response) 
         {
+            console.log(response);
+            if (response.match("^10-6/On"))
+            {
+                var currentStatus = $('#status').val();
+                if (currentStatus == "10-6/On a Call")
+                {
+                    //Do nothing
+                }
+                else
+                {
+                    document.getElementById('newCallAudio').play();
+                    new PNotify({
+                        title: 'New Call!',
+                        text: 'You\'ve been assigned a new call!',
+                        type: 'success',
+                        styling: 'bootstrap3'
+                    });
+                }
+            }
+            else if (response.match("^<br"))
+            {
+                console.log("LOGGED OUT");
+                window.location.href = '../actions/logout.php';
+                
+            }
+            else
+            {
+
+            }
+
             $('#status').val(response);
             setTimeout(getStatus, 5000);
         },
@@ -625,7 +623,8 @@
 
     
     
-
+    <!-- openCad Script -->
+    <script src="../js/openCad.js"></script>
     <!-- Custom Theme Scripts -->
     <script src="../js/custom.js"></script>
 

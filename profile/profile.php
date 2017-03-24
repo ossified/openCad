@@ -1,12 +1,4 @@
 <?php
-/**
- * lov.php
- *
- * Admin page for handling all list of values
- *
- * @author     Shane G
- */
-
     session_start();
 
     // TODO: Verify user has permission to be on this page
@@ -21,23 +13,16 @@
       $name = $_SESSION['name'];
     }
 
-    
-    if(isset($_SESSION['admin']))
-    {
-      if ($_SESSION['admin'] == 'YES')
-      {
-          //Do nothing
-      }
-    }
-    else
-    {
-      die("You do not have permission to be here. This has been recorded");
-    }
-
     $iniContents = parse_ini_file("../properties/config.ini", true); //Gather from config.ini file
     $community = $iniContents['strings']['community'];
 
-    include("../actions/adminActions.php");
+    $profileUpdate = "";
+    if (isset($_SESSION['profileUpdate']))
+    {
+        $profileUpdate = $_SESSION['profileUpdate'];
+        unset($_SESSION['profileUpdate']);
+    }
+    
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +60,7 @@
         <div class="col-md-3 left_col">
           <div class="left_col scroll-view">
             <div class="navbar nav_title" style="border: 0;">
-              <a href="javascript:void(0)" class="site_title"><i class="fa fa-tachometer"></i> <span><?php echo $community;?> Admin</span></a>
+              <a href="javascript:void(0)" class="site_title"><i class="fa fa-tachometer"></i> <span><?php echo $community;?> User</span></a>
             </div>
 
             <div class="clearfix"></div>
@@ -102,16 +87,8 @@
                 <ul class="nav side-menu">
                   <li class="active"><a><i class="fa fa-home"></i> Home <span class="fa fa-chevron-down"></span></a>
                     <ul class="nav child_menu" style="display: block;">
-                      <li><a href="admin.php">Dashboard</a></li>
-                      <li><a href="userManagement.php">User Management</a></li>
-                      <li class="current-page"><a href="javascript:void(0)">List of Values Management</a></li>
-                      <li><a href="callhistory.php">Call History</a></li>
+                      <li class="current-page"><a href="javascript:void(0)">My Profile</a></li>
                       <li><a href="../actions/direction.php">CAD Direction Page</a></li>
-                    </ul>
-                  </li>
-                  <li><a><i class="fa fa-database"></i> NCIC Editor <span class="fa fa-chevron-down"></span></a>
-                    <ul class="nav child_menu">
-                      <li><a href="ncicAdmin.php">NCIC Editor</a></li>
                     </ul>
                   </li>
                 </ul>
@@ -154,7 +131,6 @@
                     <span class=" fa fa-angle-down"></span>
                   </a>
                   <ul class="dropdown-menu dropdown-usermenu pull-right">
-                    <li><a href="../profile/profile.php">My Profile</a></li>
                     <li><a href="https://github.com/ossified/openCad/issues">Help</a></li>
                     <li><a href="../actions/logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
                   </ul>
@@ -172,16 +148,18 @@
           <div class="">
             <div class="page-title">
               <div class="title_left">
-                <h3>CAD List of Values</h3>
+                <h3>CAD User Profile</h3>
               </div>
+              <!-- ./ title_left -->
             </div>
+            <!-- ./ page-title -->
 
             <div class="clearfix"></div>
             <div class="row">
               <div class="col-md-12 col-sm-12 col-xs-12">
                 <div class="x_panel">
                   <div class="x_title">
-                    <h2>Street Names</h2>
+                    <h2>My Information</h2>
                     <ul class="nav navbar-right panel_toolbox">
                       <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                       </li>
@@ -192,33 +170,52 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                     <?php getStreetNames();?> 
-                  </div>
-                  <!-- ./ x_content -->
-                </div>
-                <!-- ./ x_panel -->
-              </div>
-              <!-- ./ col-md-12 col-sm-12 col-xs-12 -->
-            </div>
-            <!-- ./ row -->
+                  <?php echo $profileUpdate;?>
+                  <form action="../actions/profileActions.php" method="post" class="form-horizontal">
+                  <fieldset>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Name:</label>
+                        <div class="col-sm-10">
+                            <input name="name" class="form-control" type="text" maxlength="255" value="<?php echo $name;?>" required>
+                        </div>
+                        <!-- ./ col-sm-10 -->
+                    </div>
+                    <!-- ./ form-group -->
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Email:</label>
+                        <div class="col-sm-10">
+                            <input name="email" class="form-control" type="email" maxlength="255" value="<?php echo $_SESSION['email'];?>" required>
+                            <span class="muted">Note: Your email is how you login, so make sure it's valid!</span>
+                        </div>
+                        <!-- ./ col-sm-10 -->
+                    </div>
+                    <!-- ./ form-group -->
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Password:</label>
+                        <div class="col-sm-10">
+                            <input class="btn btn-primary" type="submit" name="reset_pw_btn" value="Reset" disabled/>
+                        </div>
+                        <!-- ./ col-sm-10 -->
+                    </div>
+                    <!-- ./ form-group -->
+                    <!-- ./ form-group -->
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Identifier:</label>
+                        <div class="col-sm-10">
+                            <input name="identifier" class="form-control" type="text" maxlength="255" value="<?php echo $_SESSION['identifier'];?>" required>
+                        </div>
+                        <!-- ./ col-sm-10 -->
+                    </div>
+                    <!-- ./ form-group -->
 
-            <div class="clearfix"></div>
-            <div class="row">
-              <div class="col-md-12 col-sm-12 col-xs-12">
-                <div class="x_panel">
-                  <div class="x_title">
-                    <h2>Codes</h2>
-                    <ul class="nav navbar-right panel_toolbox">
-                      <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                      </li>
-                      <li><a class="close-link"><i class="fa fa-close"></i></a>
-                      </li>
-                    </ul>
-                    <div class="clearfix"></div>
-                  </div>
-                  <!-- ./ x_title -->
-                  <div class="x_content">
-                     <?php getCodes();?> 
+                  <input name="update_profile_btn" type="submit" class="btn btn-primary btn-lg btn-block" value="Update" />
+                  </fieldset>
+
+
+
+
+                  
+                  </form>
                   </div>
                   <!-- ./ x_content -->
                 </div>
@@ -268,18 +265,15 @@
     <script src="../vendors/datatables.net-scroller/js/dataTables.scroller.min.js"></script>
     
     <script>
-		$(document).ready(function() {
+	$(document).ready(function() {
 		
-			$('#streets').DataTable({
-                
-			});
 
-      $('#codes').DataTable({
-                
-			});
+	});
+	</script>
 
-		});
-		</script>
+    <script>
+    
+    </script>
 
     <!-- Custom Theme Scripts -->
     <script src="../js/custom.js"></script>
