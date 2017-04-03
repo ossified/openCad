@@ -235,6 +235,18 @@
                             <!-- ./ col-sm-9 -->
                         </div>
                         <!-- ./ form-group -->
+                        <div class="form-group">
+                            <label class="col-md-2 col-sm-2 col-xs-2 control-label">Change Status</label>
+                            <div class="col-md-10 col-sm-10 col-xs-10">
+                                <select name="statusSelect" class="form-control selectpicker <?php echo $_SESSION['identifier'];?>" id="statusSelect" onchange="responderChangeStatus(this);" title="Select a Status">
+                                  <option value="10-8">10-8/Available</option>
+                                  <option value="10-6">10-6/Busy</option>
+                                  <option value="10-5">10-5/Meal Break</option>
+                                </select>
+                            </div>
+                            <!-- ./ col-sm-9 -->
+                        </div>
+                        <!-- ./ form-group -->
                      </form> 
                   </div>
                   <!-- ./ x_content -->
@@ -242,13 +254,32 @@
                 <!-- ./ x_panel -->
               </div>
               <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
-              
-              <?php /* Commented out for now
+
+              <?php 
+              if (isset($_GET['fire']))
+              {
+                
+                if ($_GET['fire'] == "true")
+                {
+                  
+                }
+              }
+              else
+              {
+               
+               
+                /*
+                
+                PUT THE BELOW DIV IN HERE WHEN DONE CODING
+
+                */
+              }
+              ?> 
 
               <div class="col-md-6 col-sm-6 col-xs-6">
                 <div class="x_panel">
                   <div class="x_title">
-                    <h2>My Call</h2>
+                    <h2>Citation Creator</h2>
                     <ul class="nav navbar-right panel_toolbox">
                       <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
                     </ul>
@@ -256,16 +287,39 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                      <div class="alert alert-info"><span>You're currently not on a call</span></div>
+                    <div class="alert alert-info" style="text-align:center;"><span>Citations need to be approved by staff!</span></div>
+
+                    <form id="newCitationForm">
+                      <div class="row">
+                        <div class="form-group">
+                            <select class="form-control selectpicker civilian" data-live-search="true" name="civilian" id="civilian" title="Select Civilian">
+                              <?php getCivilianNamesOption();?>
+                            </select>
+                        </div>
+                        <!-- ./ form-group -->
+                      </div>
+                      <!-- ./ row -->
+                      <div class="row">
+                        <div class="form-group">
+                          <select class="form-control selectpicker citation" data-live-search="true" name="citation[]" id="citation[]" multiple data-max-options="2" title="Select Citations (Limit 2)">
+                            <?php getCitations();?>
+                          </select>
+                        </div>
+                        <!-- ./ form-group -->
+                      </div>
+                      <!-- ./ row -->
                   </div>
                   <!-- ./ x_content -->
+                  <br/>
+                  <div class="x_footer">
+                    <button type="submit" class="btn btn-primary pull-right" id="newCitationSubmit">Submit Citation</button>
+                  </div>
+                  <!-- ./ x_footer -->
+                  </form>
                 </div>
                 <!-- ./ x_panel -->
               </div>
               <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
-
-              */?>
-
             </div>
             <!-- ./ row -->
 
@@ -331,7 +385,7 @@
           </div>
           <!-- ./ modal-header -->
           <div class="modal-body">
-          <form class="callDetailsForm">
+          <form class="callDetailsForm" id="callDetailsForm">
             <div class="form-group">
               <label class="col-lg-2 control-label">Incident ID</label>
               <div class="col-lg-10">
@@ -388,14 +442,24 @@
             </div>
             <br/>
             <!-- ./ form-group -->
+            <div class="form-group">
+              <label class="col-lg-2 control-label">Add Narrative</label>
+              <div class="col-lg-10">
+                <textarea name="narrative_add" id="narrative_add" class="form-control" style="text-transform:uppercase" rows="2" required></textarea>
+              </div>
+              <!-- ./ col-sm-9 -->
+            </div>
+            <br/>
+            <!-- ./ form-group -->
           </div>
           <!-- ./ modal-body -->
-          </form>
           <br/>
           <div class="modal-footer">
+            <input type="submit" id="addCallNarrative" class="btn btn-primary pull-left" value="Add Narrative" />
             <button id="closeDetailsModal" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           </div>
           <!-- ./ modal-footer -->
+          </form>
         </div>
         <!-- ./ modal-content -->
       </div>
@@ -438,7 +502,24 @@
     <script src="../vendors/pnotify/dist/pnotify.buttons.js"></script>
     <script src="../vendors/pnotify/dist/pnotify.nonblock.js"></script>
 
-    <audio id="newCallAudio" src="../sounds/New_Dispatch.mp3" preload="auto"></audio>
+    <!-- AUDIO TONES -->
+    <audio id="recurringToneAudio" src="../sounds/priority.mp3" preload="auto"></audio>
+    <audio id="priorityToneAudio" src="../sounds/Priority_Traffic_Alert.mp3" preload="auto"></audio>
+    <?php
+    if (isset($_GET['fire']))
+    {
+      
+      if ($_GET['fire'] == "true")
+      {
+        echo '<audio id="newCallAudio" src="../sounds/Fire_Tones_Aligned.wav" preload="auto"></audio>'; 
+      }
+    }
+    else
+    {
+      echo '<audio id="newCallAudio" src="../sounds/New_Dispatch.mp3" preload="auto"></audio>';
+    }
+    ?>
+    
 
     <script>
     $(document).ready(function() {
@@ -450,18 +531,26 @@
 
         getCalls();
         getStatus();
-
-        // request permission on page load
-          if (!Notification) {
-            alert('Desktop notifications not available in your browser. Try Chromium.'); 
-            return;
-          }
-
-          if (Notification.permission !== "granted")
-            Notification.requestPermission();
+        checkTones();
 
     });
 	</script>
+
+  <script>
+  // PNotify Stuff
+  priorityNotification = new PNotify({
+      title: 'Priority Traffic',
+      text: 'Priority Traffic Only',
+      type: 'error',
+      hide: false,
+      auto_display: false,
+      styling: 'bootstrap3',
+      buttons: {
+          closer: false,
+          sticker: false
+      }
+    });
+    </script>
 
     <script>
     function getCalls() {

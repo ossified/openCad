@@ -112,6 +112,7 @@
                     <ul class="nav child_menu" style="display: block;">
                       <li class="current-page"><a href="javascript:void(0)">Dashboard</a></li>
                       <li><a href="../actions/direction.php">CAD Direction Page</a></li>
+                      <li><a href="https://puu.sh/tRzTt/330b12ab3c.jpg" target="_blank">GTA 5 DOJRP Map</a></li>
                     </ul>
                   </li>
                   <li><a><i class="fa fa-clock-o"></i> Stopwatch <span class="fa fa-chevron-down"></span></a>
@@ -240,8 +241,8 @@
                   <!-- ./ x_content -->
                   <div class="x_footer">
                     <button class="btn btn-primary" name="new_call_btn" data-toggle="modal" data-target="#newCall">New Call</button>
-                    <button class="btn btn-danger pull-right" onclick="priorityTone('single')" value="0" id="priorityTone">Priority Tone</button>
-                    <button class="btn btn-danger pull-right" onclick="priorityTone('recurring')" value="0" id="recurringTone">10-3 Tone</button>
+                    <button class="btn btn-danger pull-right" onclick="priorityTone('single')" value="0" id="priorityTone">10-3 Tone</button>
+                    <button class="btn btn-danger pull-right" onclick="priorityTone('recurring')" value="0" id="recurringTone">Priority Tone</button>
                   </div>
                 </div>
                 <!-- ./ x_panel -->
@@ -250,10 +251,10 @@
             </div>
             <!-- ./ row -->
 
-            <?php /*Removing for now
+            
             <div class="clearfix"></div>
             <div class="row">
-              <div class="col-md-4 col-sm-4 col-xs-4">
+              <div class="col-md-2 col-sm-2 col-xs-2">
                 <div class="x_panel">
                   <div class="x_title">
                     <h2>Active Dispatchers</h2>
@@ -264,18 +265,18 @@
                   </div>
                   <!-- ./ x_title -->
                   <div class="x_content">
-                      <?php getDispatchers();?>
+                      <div id="dispatchers">
+                      
+                      </div>
                   </div>
                   <!-- ./ x_content -->
                 </div>
                 <!-- ./ x_panel -->
               </div>
               <!-- ./ col-md-2 col-sm-2 col-xs-2 -->
-              */?>
-
-            <div class="clearfix"></div>
-            <div class="row">
-              <div class="col-md-6 col-sm-6 col-xs-6">
+              
+            
+              <div class="col-md-5 col-sm-5 col-xs-5">
                 <div class="x_panel">
                   <div class="x_title">
                     <h2>Available Units</h2>
@@ -294,9 +295,9 @@
                 </div>
                 <!-- ./ x_panel -->
               </div>
-              <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
+              <!-- ./ col-md-5 col-sm-5 col-xs-5 -->
 
-                <div class="col-md-6 col-sm-6 col-xs-6">
+                <div class="col-md-5 col-sm-5 col-xs-5">
                     <div class="x_panel">
                     <div class="x_title">
                         <h2>Unavailable Units</h2>
@@ -315,7 +316,7 @@
                     </div>
                     <!-- ./ x_panel -->
                 </div>
-                <!-- ./ col-md-6 col-sm-6 col-xs-6 -->
+                <!-- ./ col-md-5 col-sm-5 col-xs-5 -->
             </div>
             <!-- ./ row -->        
 
@@ -490,6 +491,44 @@
     </div>
     <!-- ./ modal fade bs-example-modal-lg -->
 
+    <!-- Assign User to Call Modal -->
+    <div class="modal fade" id="assign" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span>
+            </button>
+            <h4 class="modal-title" id="myModalLabel">Assign a User</h4>
+          </div>
+          <!-- ./ modal-header -->
+          <div class="modal-body">
+            <form class="assignUnitForm" id="assignUnitForm">
+              <div class="form-group row">
+              <label class="col-lg-2 control-label">Assign Unit to Call</label>
+              <div class="col-lg-10">
+                <select class="form-control selectpicker unit" data-live-search="true" name="unit" id="unit" title="Select a Unit">
+                  <option></option>
+                </select>
+                <input type="hidden" value="" name="callId" />
+              </div>
+              <!-- ./ col-sm-9 -->
+          </div>
+          <!-- ./ modal-body -->
+          <div class="modal-footer">
+            <input type="submit" name="assign_unit" class="btn btn-primary" value="Send"/>
+            <button id="closeAssign" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+          <!-- ./ modal-footer -->
+          </form>
+          </div>
+          <!-- ./ modal-body -->
+        </div>
+        <!-- ./ modal-content -->
+      </div>
+      <!-- ./ modal-dialog modal-lg -->
+    </div>
+    <!-- ./ modal fade bs-example-modal-lg -->
+
     <!-- New Call Modal -->
     <div class="modal fade" id="newCall" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog modal-lg">
@@ -543,7 +582,7 @@
               <div class="form-group row">
                 <label class="col-lg-2 control-label">Narrative</label>
                 <div class="col-lg-10">
-                  <textarea name="narrative" class="form-control" rows="5"></textarea>
+                  <textarea name="narrative" id="narrative" class="form-control" style="text-transform:uppercase" rows="5"></textarea>
                 </div>
                 <!-- ./ col-sm-9 -->
               </div>
@@ -557,6 +596,8 @@
           </div>
           <!-- ./ modal-footer -->
           </form>
+          </div>
+          <!-- ./ modal-body -->
         </div>
         <!-- ./ modal-content -->
       </div>
@@ -575,7 +616,7 @@
           </div>
           <!-- ./ modal-header -->
           <div class="modal-body">
-          <form class="callDetailsForm">
+          <form class="callDetailsForm" id="callDetailsForm">
             <div class="form-group">
               <label class="col-lg-2 control-label">Incident ID</label>
               <div class="col-lg-10">
@@ -626,7 +667,16 @@
             <div class="form-group">
               <label class="col-lg-2 control-label">Narrative</label>
               <div class="col-lg-10">
-                <div name="call_narrative" id="call_narrative" contenteditable="false" style="background-color: #eee; opacity: 1; border: 1px solid #ccc; padding: 6px 12px; font-size: 14px;"></div>
+                <div name="call_narrative" id="call_narrative" contenteditable="false" style="background-color: #eee; opacity: 1; border: 1px solid #ccc; padding: 6px 12px; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;"></div>
+              </div>
+              <!-- ./ col-sm-9 -->
+            </div>
+            <br/><br/><br/><br/>
+            <!-- ./ form-group -->
+            <div class="form-group">
+              <label class="col-lg-2 control-label">Add Narrative</label>
+              <div class="col-lg-10">
+                <textarea name="narrative_add" id="narrative_add" class="form-control" style="text-transform:uppercase" rows="2" required></textarea>
               </div>
               <!-- ./ col-sm-9 -->
             </div>
@@ -634,12 +684,13 @@
             <!-- ./ form-group -->
           </div>
           <!-- ./ modal-body -->
-          </form>
           <br/>
           <div class="modal-footer">
+            <input type="submit" id="addCallNarrative" class="btn btn-primary pull-left" value="Add Narrative" />
             <button id="closeDetailsModal" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           </div>
           <!-- ./ modal-footer -->
+          </form>
         </div>
         <!-- ./ modal-content -->
       </div>
@@ -650,7 +701,8 @@
     
 
     <!-- AUDIO TONES -->
-    <audio id="recurringToneAudio" src="../sounds/recurringTone.mp3" preload="auto"></audio>
+    <audio id="recurringToneAudio" src="../sounds/priority.mp3" preload="auto"></audio>
+    <audio id="priorityToneAudio" src="../sounds/Priority_Traffic_Alert.mp3" preload="auto"></audio>
 
     <!-- jQuery -->
     <script src="../vendors/jquery/dist/jquery.min.js"></script>
@@ -686,10 +738,6 @@
     <script src="../vendors/pnotify/dist/pnotify.js"></script>
     <script src="../vendors/pnotify/dist/pnotify.buttons.js"></script>
     <script src="../vendors/pnotify/dist/pnotify.nonblock.js"></script>
-    
-    <script>
-    
-    </script>
 
     <script>
     $(document).ready(function() {
@@ -700,10 +748,27 @@
         getCalls();
         getAvailableUnits();
         getUnAvailableUnits();
+        getActiveDispatchers();
         checkTones();
      
     });
 	  </script>
+    
+    <script>
+    // PNotify Stuff
+    priorityNotification = new PNotify({
+        title: 'Priority Traffic',
+        text: 'Priority Traffic Only',
+        type: 'error',
+        hide: false,
+        auto_display: false,
+        styling: 'bootstrap3',
+        buttons: {
+            closer: false,
+            sticker: false
+        }
+    });
+    </script>
 
     <script>
     function testFunction(element)
@@ -715,6 +780,8 @@
       unit = statusInit.split(" "); 
       unit.shift();
       unit = unit.join(' ');
+
+      console.log(unit);
 
       $.ajax({
           type: "POST",
@@ -749,40 +816,49 @@
     <script>
     function logoutUser(element)
     {
-      unit = element.className.split(" ");
-      unit.shift(); //Remove the nopadding class
-      unit.shift(); //Remove the logoutUser class
-      unit = unit.join(' '); //Rejoin the array
-      console.log(unit);
-      
-      $.ajax({
-          type: "POST",
-          url: "../actions/api.php",
-          data: {
-              logoutUser: 'yes',
-              unit: unit
-          },
-          success: function(response) 
-          {
-            console.log(response);
-            if (response == "SUCCESS")
+      var r = confirm("Are you sure you want to log this user out?");
+
+      if (r == true)
+      {
+        unit = element.className.split(" ");
+        unit.shift(); //Remove the nopadding class
+        unit.shift(); //Remove the logoutUser class
+        unit = unit.join(' '); //Rejoin the array
+        console.log(unit);
+        
+        $.ajax({
+            type: "POST",
+            url: "../actions/api.php",
+            data: {
+                logoutUser: 'yes',
+                unit: unit
+            },
+            success: function(response) 
             {
-              new PNotify({
-                title: 'Success',
-                text: 'Successfully logged out user',
-                type: 'success',
-                styling: 'bootstrap3'
-              }); 
+              console.log(response);
+              if (response == "SUCCESS")
+              {
+                new PNotify({
+                  title: 'Success',
+                  text: 'Successfully logged out user',
+                  type: 'success',
+                  styling: 'bootstrap3'
+                }); 
+              }
+              
+            },
+            error : function(XMLHttpRequest, textStatus, errorThrown)
+            {
+              console.log("Error");
             }
             
-          },
-          error : function(XMLHttpRequest, textStatus, errorThrown)
-          {
-            console.log("Error");
-          }
-          
-        });
-    }
+          });
+        }
+        else
+        {
+          //Do nothing
+        }
+  }
     </script>
 
     <script>

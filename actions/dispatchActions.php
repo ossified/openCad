@@ -13,6 +13,14 @@ if (isset($_POST['newCall']))
 {
     newCall();
 }
+if (isset($_POST['assignUnit']))
+{
+    assignUnit();
+}
+if (isset($_POST['addNarrative']))
+{
+    addNarrative();
+}
 
 if (isset($_GET['term'])) {
     $data = array();
@@ -37,6 +45,126 @@ if (isset($_GET['term'])) {
     echo json_encode($data);
 
 
+}
+
+function addNarrative()
+{
+    session_start();   
+    $details = $_POST['details'];
+    $callId = $_POST['callId'];
+    $who = $_SESSION['identifier'];
+
+    $detailsArr = explode("&", $details);
+   
+    $narrativeAdd = explode("=", $detailsArr[0])[1];
+    $narrativeAdd = strtoupper($narrativeAdd);
+
+    $narrativeAdd = date("Y-m-d H:i:s").': '.$who.': '.$narrativeAdd.'<br/>';
+
+    $narrativeAdd = str_replace("+", " ", $narrativeAdd);
+
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+	
+    if (!$link) { 
+        die('Could not connect: ' .mysql_error());
+    }
+
+    $sql = "UPDATE calls SET call_notes = concat(call_notes, ?) WHERE call_id = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "si", $narrativeAdd, $callId);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+    echo "SUCCESS";
+
+}
+
+function assignUnit()
+{
+    //Need to explode the details by &
+    $details = $_POST['details'];
+    $detailsArr = explode("&", $details);
+
+    if ($detailsArr[0] == 'unit=')
+    {
+        echo "ERROR";
+        die();
+    }
+
+    $unit = explode("=", $detailsArr[0])[1];
+    $callId = explode("=", $detailsArr[1])[1];
+    $unit = str_replace("+", " ", $unit);
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "INSERT INTO calls_users (call_id, identifier) VALUES (?, ?)";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "is", $callId, $unit);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+    //Now we need to modify the assigned user's status
+    $sql = "UPDATE active_users SET status = '0', status_detail = '3' WHERE active_users.callsign = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $unit);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+    //Now we'll add data to the call log for unit history
+    $narrativeAdd = date("Y-m-d H:i:s").': Dispatched: '.$unit.'<br/>';
+
+    $sql = "UPDATE calls SET call_notes = concat(call_notes, ?) WHERE call_id = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "si", $narrativeAdd, $callId);
+        $result = mysqli_stmt_execute($stmt);
+    
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
+    }
+
+    echo "SUCCESS";
 }
 
 function storeCall()
@@ -162,7 +290,6 @@ function freeUnitStatus($unit)
 
 function newCall()
 {
-    //echo var_dump($_POST);
     //Need to explode the details by &
     $details = $_POST['details'];
     $detailsArr = explode("&", $details);
@@ -175,6 +302,7 @@ function newCall()
     $unit1 = str_replace('+',' ', explode("=", $detailsArr[4])[1]);
     $unit2 = str_replace('+',' ', explode("=", $detailsArr[5])[1]);
     $narrative = str_replace('+',' ', explode("=", $detailsArr[6])[1]);
+    $narrative = strtoupper($narrative);
 
     $created = date("Y-m-d H:i:s").': Call Created<br/>';
     if ($narrative == "")
@@ -186,8 +314,6 @@ function newCall()
         $narrative = $created.date("Y-m-d H:i:s").': '.$narrative.'<br/>';
     }
     
-    
-
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 
 	if (!$link) {
@@ -213,6 +339,15 @@ function newCall()
 		die("Failed to run query: " . $e->getMessage()); //TODO: A function to send me an email when this occurs should be made
 	}
 
+    $query = "SELECT identifier FROM active_users WHERE callsign = \"$unit1\"";
+
+	$result=mysqli_query($link, $query);
+	
+	while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+	{
+		$unit_call_identifier = $row[0];
+	}
+
     //Add the units into the calls_users table
     if ($unit1 == "")
     { /*Do nothing*/ }
@@ -222,7 +357,7 @@ function newCall()
 
         try {
             $stmt = mysqli_prepare($link, $sql);
-            mysqli_stmt_bind_param($stmt, "is", $last_id, $unit1);
+            mysqli_stmt_bind_param($stmt, "is", $last_id, $unit_call_identifier);
             $result = mysqli_stmt_execute($stmt);
 		
             if ($result == FALSE) {

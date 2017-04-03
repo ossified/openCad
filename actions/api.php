@@ -53,6 +53,10 @@ if (isset($_GET['checkTones']))
 {
     checkTones();
 }
+if (isset($_GET['getDispatchers']))
+{
+    getDispatchers();
+}
 
 //Checks to see if there are any active tones. Certain tones will add a session variable
 function checkTones()
@@ -66,7 +70,6 @@ function checkTones()
     $sql = "SELECT * from tones";
 
     $result=mysqli_query($link, $sql);
-
 
     $encode = array();
     while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -192,6 +195,19 @@ function changeStatus()
             $statusDet = '1';
             $onCall = true;
             break;
+        case "10-8":
+            $statusId = '1';
+            $statusDet = '1';
+            $onCall = true;
+            break;
+        case "10-6":
+            $statusId = '0';
+            $statusDet = '2';
+            break;
+        case "10-5":
+            $statusId = '0';
+            $statusDet = '4';
+            break;
     }
 
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
@@ -228,8 +244,18 @@ function changeStatus()
             $callId = $row[0];
         }
 
+        //Get their callsign for the narrative
+        $sql = "SELECT callsign FROM active_users WHERE identifier = \"$unit\"";
+
+        $result=mysqli_query($link, $sql);
+
+        while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+        {
+            $callsign = $row[0];
+        }
+
         //Update the call_notes to say they were cleared
-        $narrativeAdd = date("Y-m-d H:i:s").': Unit Cleared: '.$unit.'<br/>';
+        $narrativeAdd = date("Y-m-d H:i:s").': Unit Cleared: '.$callsign.'<br/>';
 
         $sql = "UPDATE calls SET call_notes = concat(call_notes, ?) WHERE call_id = ?";
 
@@ -283,11 +309,10 @@ function getDispatchers()
 	$result = mysqli_query($link, $sql);
 
     echo '
-            <table id="dispatchers" class="table table-striped table-bordered">
+            <table id="dispatchersTable" class="table table-striped table-bordered">
             <thead>
                 <tr>
                 <th>Identifier</th>
-                <th>Callsign</th>
                 </tr>
             </thead>
             <tbody>
@@ -300,7 +325,6 @@ function getDispatchers()
             echo '
             <tr>
                 <td>'.$row[0].'</td>
-                <td>'.$row[1].'</td>
             </tr>
             ';
         }
@@ -597,7 +621,7 @@ function getActiveCalls()
 
                 echo '<td>'.$row[3].'/'.$row[4].'/'.$row[5].'</td>';
 
-                if (isset($_GET['responder']))
+                if (isset($_GET['type']) && $_GET['type'] == "responder")
                 {
                     echo' 
                     <td>
@@ -610,8 +634,8 @@ function getActiveCalls()
                 <td>
                     <button id="'.$row[0].'" class="btn-link" style="color: red;" value="'.$row[0].'" onclick="clearCall('.$row[0].')">Clear</button>
                     <button id="'.$row[0].'" class="btn-link" name="call_details_btn" data-toggle="modal" data-target="#callDetails">Details</button>
+                    <input id="'.$row[0].'" type="submit" name="assign_unit" data-toggle="modal" data-target="#assign" class="btn-link '.$row[0].'" value="Assign"/>
                     <input name="uid" name="uid" type="hidden" value="'.$row[0].'"/>
-                    <input type="submit" name="assign_unit" class="btn-link" value="Assign"/>
                 </td>';
                 }
                 
@@ -644,11 +668,22 @@ function getUnitsOnCall($callId)
     $result1=mysqli_query($link, $sql1);
     
     $units = "";
+    
+    $num_rows = $result1->num_rows;
 
-    while($row1 = mysqli_fetch_array($result1, MYSQLI_BOTH))
+    if($num_rows == 0)
     {
-        $units = $units.''.$row1[1].' ';   
+        $units = '<span style="color: red;">Unassigned</span>';
     }
+    else
+    {
+        while($row1 = mysqli_fetch_array($result1, MYSQLI_BOTH))
+        {
+            $units = $units.''.$row1[1].' ';   
+        }
+    }
+
+    
     
     echo $units;
 
@@ -683,6 +718,42 @@ function getCallDetails()
     
     echo json_encode($encode);
     mysqli_close($link);
+}
+
+function getCivilianNamesOption()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "SELECT id, first_name, last_name FROM ncic_names";
+
+    $result=mysqli_query($link, $sql);
+
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        echo "<option value=".$row[0].">".$row[1]." ".$row[2]."</option>";
+    }
+}
+
+function getCitations()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "SELECT citation_name FROM citations";
+
+    $result=mysqli_query($link, $sql);
+
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        echo "<option value=".$row[0].">".$row[0]."</option>";
+    }
 }
 
 ?>

@@ -250,7 +250,7 @@ function ncic_warrants()
                             //Do Nothing
                         }
                     echo '
-                    <input name="delete_warrant" type="submit" class="btn btn-xs btn-link" style="color: red;" value="Delete" />
+                    <input name="delete_warrant" type="submit" class="btn btn-xs btn-link" style="color: red;" value="Expunge" />
                     <input name="wid" type="hidden" value='.$row[2].' />
                     </form>                    
                 </td>
@@ -273,7 +273,7 @@ function ncic_citations()
         die('Could not connect: ' .mysql_error());
     }
 
-    $query = "SELECT ncic_names.first_name, ncic_names.last_name, ncic_citations.id, ncic_citations.citation_name, ncic_citations.issued_date, ncic_citations.issued_by FROM ncic_citations INNER JOIN ncic_names ON ncic_citations.name_id=ncic_names.id";
+    $query = "SELECT ncic_names.first_name, ncic_names.last_name, ncic_citations.id, ncic_citations.citation_name, ncic_citations.issued_date, ncic_citations.issued_by FROM ncic_citations INNER JOIN ncic_names ON ncic_citations.name_id=ncic_names.id WHERE ncic_citations.status = '1'";
 
     $result=mysqli_query($link, $query);
 
@@ -312,7 +312,7 @@ function ncic_citations()
                 <td>
                     <form action="../actions/ncicAdminActions.php" method="post">
                     <input name="edit_citation" type="submit" class="btn btn-xs btn-link" value="Edit" disabled />
-                    <input name="delete_citation" type="submit" class="btn btn-xs btn-link" style="color: red;" value="Delete"/>
+                    <input name="delete_citation" type="submit" class="btn btn-xs btn-link" style="color: red;" value="Expunge"/>
                     <input name="cid" type="hidden" value='.$row[2].' />
                     </form>                    
                 </td>
@@ -324,6 +324,23 @@ function ncic_citations()
             </tbody>
             </table>
         ';
+    }
+}
+function getCivilianNamesOption()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "SELECT id, first_name, last_name FROM ncic_names";
+
+    $result=mysqli_query($link, $sql);
+
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        echo "<option value=".$row[0].">".$row[1]." ".$row[2]."</option>";
     }
 }
 
@@ -384,7 +401,7 @@ function create_citation()
 		die('Could not connect: ' .mysql_error());
 	}
 
-    $sql = "INSERT INTO ncic_citations (name_id, citation_name, issued_by) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO ncic_citations (name_id, citation_name, issued_by, status) VALUES (?, ?, ?, '1')";
 	
     
 	try {
@@ -411,8 +428,22 @@ function create_citation()
 function create_warrant()
 {
     $userId = $_POST['civilian_names'];
-    $warrant_name = $_POST['warrant_name'];
+    $warrant_name = $_POST['warrant_name_sel'];
     $issuing_agency = $_POST['issuing_agency'];
+
+    $expiry = substr($_POST['warrant_name_sel'], -1);
+    
+    $warrant_name = substr($_POST['warrant_name_sel'], 0, -1);
+    
+    switch ($expiry)
+    {
+        case "1":
+            $interval = 60;
+            break;
+        case "2":
+            $interval = 30;
+            break;
+    }
 
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 
@@ -420,12 +451,12 @@ function create_warrant()
 		die('Could not connect: ' .mysql_error());
 	}
 
-    $sql = "INSERT INTO ncic_warrants (name_id, expiration_date, warrant_name, issuing_agency) SELECT ?, DATE_ADD(NOW(), INTERVAL 30 day), ?, ?";
+    $sql = "INSERT INTO ncic_warrants (name_id, expiration_date, warrant_name, issuing_agency) SELECT ?, DATE_ADD(NOW(), INTERVAL ? day), ?, ?";
 	
     
 	try {
 		$stmt = mysqli_prepare($link, $sql);
-		mysqli_stmt_bind_param($stmt, "iss", $userId, $warrant_name, $issuing_agency);
+		mysqli_stmt_bind_param($stmt, "iiss", $userId, $interval, $warrant_name, $issuing_agency);
 		$result = mysqli_stmt_execute($stmt);
 		
 		if ($result == FALSE) {
@@ -654,5 +685,23 @@ function create_plate()
     $_SESSION['plateMessage'] = '<div class="alert alert-success"><span>Successfully added plate to the database</span></div>';
 
     header("Location:../administration/ncicAdmin.php#plate_panel");
+}
+
+function getCitations()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $sql = "SELECT citation_name FROM citations";
+
+    $result=mysqli_query($link, $sql);
+
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        echo "<option value=".$row[0].">".$row[0]."</option>";
+    }
 }
 ?>

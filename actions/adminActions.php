@@ -33,7 +33,7 @@ if (isset($_POST['reactivateUser'])){
     reactivateUser();
 }
 if (isset($_POST['deleteUser'])){ 
-    echo "Delete";
+    delete_user();
 }
 if (isset($_POST['getUserDetails'])){
     getUserDetails();
@@ -43,6 +43,91 @@ if (isset($_POST['delete_callhistory'])){
 }
 
 /* FUNCTIONS */
+
+function getRanks()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) { 
+        die('Could not connect: ' .mysql_error());
+    }
+    
+    $query = "SELECT * FROM ranks";
+
+    $result=mysqli_query($link, $query);
+
+    echo '
+        <table id="ranks" class="table table-striped table-bordered">
+        <thead>
+            <tr>
+            <th>Rank ID</th>
+            <th>Rank Name</th>
+            <th>User Can Choose <i class="fa fa-question-circle" aria-hidden="true" data-toggle="tooltip" data-placement="bottom" title="This indicates whether or not regular users may select this rank for themselves"></i></th>
+            </tr>
+        </thead>
+        <tbody>           
+    ';
+
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
+    {
+        echo '
+        <tr>
+            <td>'.$row[0].'</td>
+            <td>'.$row[1].'</td>';
+
+            switch ($row[2])
+            {
+                case "1":
+                    echo "<td>True</td>";
+                    break;
+                case "0":
+                    echo "<td>False</td>";
+                    break;
+            }
+
+        echo '    
+        </tr>
+        ';
+    }
+
+    echo '
+        </tbody>
+        </table>
+    ';
+}
+
+function delete_user()
+{
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (!$link) {
+        die('Could not connect: ' .mysql_error());
+    }
+
+    $uid = $_POST['uid'];
+    echo $uid;
+
+    $query = "DELETE FROM users WHERE id = ?";
+
+    try {
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, "i", $uid);
+        $result = mysqli_stmt_execute($stmt);
+
+        if ($result == FALSE) {
+            die(mysqli_error($link));
+        }
+    }
+    catch (Exception $e)
+    {
+        die("Failed to run query: " . $e->getMessage());
+    }
+
+    session_start();
+    $_SESSION['userMessage'] = '<div class="alert alert-success"><span>Successfully removed user from database</span></div>';
+    header("Location: ../administration/userManagement.php#user_panel");
+}
+
 /* Gets the user count. Returns value */
 function getUserCount()
 {
@@ -391,7 +476,7 @@ function getUsers()
             <td>
                 <form action="../actions/adminActions.php" method="post">
                 <button name="editUser" type="button" data-toggle="modal" id="'.$row[0].'" data-target="#editUserModal" class="btn btn-xs btn-link">Edit</button>
-                <input name="deleteUser" type="submit" class="btn btn-xs btn-link" value="Delete" />
+                <input name="deleteUser" type="submit" class="btn btn-xs btn-link" onclick="deleteUser('.$row[0].')" value="Delete" />
                 ';
             if ($row[4] == '2')
             {

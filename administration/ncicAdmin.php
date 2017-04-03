@@ -367,9 +367,8 @@
                 <div class="form-group row">
                 <label class="col-lg-2 control-label">Civilian Name</label>
                 <div class="col-lg-10">
-                  <select class="form-control selectpicker" name="civilian_names" id="civilian_names" data-live-search="true" required>
-                    <option> </option>
-                    <?php getCivilianNames();?>
+                  <select class="form-control selectpicker" name="civilian_names" id="civilian_names" data-live-search="true" required title="Select Civilian">
+                    <?php getCivilianNamesOption();?>
                   </select>
                 </div>
                 <!-- ./ col-sm-9 -->
@@ -378,12 +377,13 @@
               <div class="form-group row">
                 <label class="col-lg-2 control-label">Citation Name</label>
                 <div class="col-lg-10">
-                  <input type="text" class="form-control" name="citation_name" />
+                  <select class="form-control selectpicker citation" data-live-search="true" name="citation_name" id="citation_name" title="Select Citation" required>
+                    <?php getCitations();?>
+                  </select>
                 </div>
                 <!-- ./ col-sm-9 -->
               </div>
               <!-- ./ form-group -->
-            
           </div>
           <!-- ./ modal-body -->
           <div class="modal-footer">
@@ -425,7 +425,59 @@
               <div class="form-group row">
                 <label class="col-lg-2 control-label">Warrant Name</label>
                 <div class="col-lg-10">
-                  <input type="text" class="form-control" name="warrant_name" />
+                  <select class="form-control selectpicker" name="warrant_name_sel" id="warrant_name_sel" data-live-search="true" title="Select a Warrant">
+                    <optgroup label="Violent Warrants (60 day expiry)">
+                      <option value="1st Degree Murder 1">1st Degree Murder</option>
+                      <option value="2nd Degree Murder 1">2nd Degree Murder</option>
+                      <option value="3rd Degree Murder 1">3rd Degree Murder</option>
+                      <option value="Attempted Murder 1">Attempted Murder</option>
+                      <option value="Kidnapping 1">Kidnapping</option>
+                      <option value="Attempted Kidnapping 1">Attempted Kidnapping</option>
+                      <option value="Hostage Taking 1">Hostage Taking</option>
+                      <option value="Bank/Fed Robbery 1">Bank/Fed Robbery</option>
+                      <option value="Terroristic Activity 1">Terroristic Activity</option>
+                      <option value="Terroristic Threats 1">Terroristic Threats</option>
+                      <option value="JailBreak 1">JailBreak</option>
+                      <option value="Robbery 1">Robbery</option>
+                      <option value="Grand Theft Auto 1">Grand Theft Auto</option>
+                      <option value="Burglary 1">Burglary</option>
+                      <option value="Threatening an Official 1">Threatening an Official</option>
+                      <option value="Sexual Assault 1">Sexual Assault</option>
+                      <option value="Hate Crime 1">Hate Crime</option>
+                      <option value="Assault 1">Assault</option>
+                      <option value="Conspiracy 1">Conspiracy</option>
+                      <option value="Drug Trafficking 1">Drug Trafficking</option>
+                      <option value="Evasion/Fleeing/Eluding 1">Evasion/Fleeing/Eluding</option>
+                      <option value="Felony Evading 1">Felony Evading</option>
+                      <option value="Resisting Arrest 1">Resisting Arrest</option>
+                      <option value="Firearm in City Limits 1">Firearm in City Limits</option>
+                      <option value="Firearm by Felon 1">Firearm by Felon</option>
+                      <option value="Unlicensed Firearm 1">Unlicensed Firearm</option>
+                      <option value="Firearm Discharge in City Limits 1">Firearm Discharge in City Limits</option>
+                      <option value="Illegal Weapon 1">Illegal Weapon</option>
+                      <option value="Illegal Magazine 1">Illegal Magazine</option>
+                      <option value="Concealed Carry Rifle 1">Concealed Carry Rifle</option>
+                      <option value="Failure to Inform 1">Failure to Inform</option>
+                    </optgroup>
+                    <optgroup label="Non-Violent Warrants (30 day expiry)">
+                      <option value="FTA: Lewd Conduct 2">FTA: Lewd Conduct</option>
+                      <option value="FTA: DUI/DWI 2">FTA: DUI/DWI</option>
+                      <option value="FTA: Fraud 2">FTA: Fraud</option>
+                      <option value="FTA: Hit and Run 2">FTA: Hit and Run</option>
+                      <option value="FTA: Speeding 2">FTA: Speeding</option>
+                      <option value="FTA: Reckless Driving 2">FTA: Reckless Driving</option>
+                      <option value="FTA: Obstruction of Justice 2">FTA: Obstruction of Justice</option>
+                      <option value="FTA: Verbal Abuse 2">FTA: Verbal Abuse</option>
+                      <option value="FTA: Bribery 2">FTA: Bribery</option>
+                      <option value="FTA: Disorderly Conduct 2">FTA: Disorderly Conduct</option>
+                      <option value="FTA: Drug Posession 2">FTA: Drug Posession</option>
+                      <option value="FTA: Trespassing 2">FTA: Trespassing</option>
+                      <option value="FTA: Excessive Noise 2">FTA: Excessive Noise</option>
+                      <option value="FTA: Failure to Identify 2">FTA: Failure to Identify</option>
+                      <option value="FTA: Stalking 2">FTA: Stalking</option>
+                      <option value="FTA: Public Intoxication 2">FTA: Public Intoxication</option>
+                    </optgroup>
+                  </select>
                 </div>
                 <!-- ./ col-sm-9 -->
               </div>

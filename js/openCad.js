@@ -246,6 +246,128 @@ $(function() {
     });
 });
 
+// Handles submission of the add narrative form
+$(function() {
+    $('.callDetailsForm').submit(function(e) {
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+
+        $.ajax({
+            type: "POST",
+            url: "../actions/dispatchActions.php",
+            data: {
+                addNarrative: 'yes',
+                callId: $('#call_id_det').val(), 
+                details: $("#"+this.id).serialize()
+            },
+            success: function(response) 
+            {
+            console.log(response);
+            if (response == "SUCCESS")
+            {
+                
+                new PNotify({
+                title: 'Success',
+                text: 'Successfully added call narrative',
+                type: 'success',
+                styling: 'bootstrap3'
+                }); 
+
+                $('#callDetails').modal('toggle');
+
+                $('.callDetailsForm').find('textarea').val('');
+            }
+            
+            },
+            error : function(XMLHttpRequest, textStatus, errorThrown)
+            {
+            console.log("Error");
+            }
+            
+
+        }); 
+    });
+});
+
+// Handles assigning a unit to a call
+$(function() {
+    $('.assignUnitForm').submit(function(e) {
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+
+        $.ajax({
+            type: "POST",
+            url: "../actions/dispatchActions.php",
+            data: {
+                assignUnit: 'yes',
+                details: $("#"+this.id).serialize(),
+            },
+            success: function(response) 
+            {
+            //console.log(response);
+            if (response == "SUCCESS")
+            {
+                $('#closeAssign').trigger('click');
+
+                new PNotify({
+                    title: 'Success',
+                    text: 'Successfully assigned unit to call',
+                    type: 'success',
+                    styling: 'bootstrap3'
+                }); 
+
+                getCalls();
+            }
+
+            if (response == "ERROR")
+            {
+                $('#closeAssign').trigger('click');
+
+                new PNotify({
+                    title: 'Error',
+                    text: 'You must select a unit to assign',
+                    type: 'error',
+                    styling: 'bootstrap3'
+                }); 
+
+                getCalls();
+            }
+            
+            },
+            error : function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                console.log("Error");
+            }
+            
+        }); 
+    });
+});
+
+// Handles the active dispatchers for the dispatch page
+function getActiveDispatchers() {
+$.ajax({
+        type: "GET",
+        url: "../actions/api.php",
+        data: {
+            getDispatchers: 'yes'
+        },
+        success: function(response) 
+        {
+        $('#dispatchers').html(response);
+        $('#dispatchersTable').DataTable({
+            paging: false,
+            searching: false
+        });
+
+        setTimeout(getActiveDispatchers, 5000);
+        
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown)
+        {
+        console.log("Error");
+        }
+        
+    }); 
+}
+
 // Handles the unavailable unit poller for the dispatch page
 function getUnAvailableUnits() {
 $.ajax({
@@ -310,6 +432,54 @@ $('#newCall').on('show.bs.modal', function(e) {
     });
 });
 
+//Disables enter key in the call narrative textarea
+$('#narrative').keypress(function(event) {
+    if (event.keyCode == 13) {
+        event.preventDefault();
+    }
+})
+
+//Disables enter key in the add narrative textarea
+$('#narrative_add').keypress(function(event) {
+    if (event.keyCode == 13) {
+        event.preventDefault();
+    }
+})
+
+// Handles the ajax query to auto populate the assign modal with available units
+$('#assign').on('show.bs.modal', function(e) {
+    var $modal = $(this), callId = e.relatedTarget.id;
+    
+    callIdInput = $modal.find('input[name="callId"]');
+    callIdInput.val(callId);
+
+    $.ajax({
+        cache: false,
+        type: 'GET',
+        url: '../actions/api.php',
+        data: {'getActiveUnits': 'yes'},
+        success: function(result) 
+        {
+        data = JSON.parse(result);
+
+        var mymodal = $('#assign');      
+        var select = mymodal.find('#unit');
+        select.empty();
+
+        $.each(data, function(key, value) {
+            select.append($("<option/>")
+                        .val(key)
+                        .text(value));
+        });
+
+        select.selectpicker('refresh');
+        },
+
+        error:function(exception){alert('Exeption:'+exception);}
+    });
+});
+
+
 // Handles the call details panel for the dispatch and responder pages
 $('#callDetails').on('show.bs.modal', function(e) {
     var $modal = $(this), callId = e.relatedTarget.id;
@@ -338,6 +508,48 @@ $('#callDetails').on('show.bs.modal', function(e) {
         error:function(exception){alert('Exeption:'+exception);}
     });
 }); 
+
+function deleteUser(uid) {
+    var $tr = $(this).closest('tr');
+    var r = confirm("Are you sure you want to delete this user? This cannot be undone!");
+
+    if (r == true)
+    {
+        $.ajax({
+        type: "POST",
+        url: "../actions/dispatchActions.php",
+        data: {
+            deleteUser: 'yes',
+            uid: uid
+        },
+        success: function(response) 
+        {
+            console.log(response);
+            $tr.find('td').fadeOut(1000,function(){ 
+                $tr.remove();                    
+            });
+            
+            new PNotify({
+            title: 'Success',
+            text: 'Successfully deleted user',
+            type: 'success',
+            styling: 'bootstrap3'
+            }); 
+
+            getCalls();
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown)
+        {
+            console.log("Error");
+        }
+        
+        }); 
+    }
+    else
+    {
+        return; // Do nothing
+    } 
+}
 
 // Clears calls
 function clearCall(btn_id) {
@@ -384,11 +596,14 @@ function clearCall(btn_id) {
 
 // Gets calls
 function getCalls() {
+    var file = $(location).attr('pathname').split("/")[2]
+
     $.ajax({
         type: "GET",
         url: "../actions/api.php",
         data: {
-            getCalls: 'yes'
+            getCalls: 'yes',
+            type: file
         },
         success: function(response) 
         {
@@ -415,14 +630,14 @@ function priorityTone(type)
         if (value == "0")
         {
             priorityButton.val("1");
-            priorityButton.text("Priority Tone - ACTIVE");
+            priorityButton.text("10-3 Tone - ACTIVE");
             sendTone("priority", "start");
         }
         else if (value == "1")
         {
             sendTone("priority", "stop");
             priorityButton.val("0");
-            priorityButton.text("Priority Tone");
+            priorityButton.text("10-3 Tone");
         }
     }
     else if (type == "recurring")
@@ -433,21 +648,19 @@ function priorityTone(type)
         if (value == "0")
         {
             recurringButton.val("1");
-            recurringButton.text("10-3 Tone - ACTIVE");
+            recurringButton.text("Priority Tone - ACTIVE");
             sendTone("recurring", "start");
         }
         else if (value == "1")
         {
             sendTone("recurring", "stop");
             recurringButton.val("0");
-            recurringButton.text("10-3 Tone");
+            recurringButton.text("Priority Tone");
         }
     }
 
  function sendTone(name, action)
  {
-    console.log(name + ' ' + action);
-
     $.ajax({
         type: "POST",
         url: "../actions/api.php",
@@ -462,7 +675,7 @@ function priorityTone(type)
             {
                 new PNotify({
                 title: 'Success',
-                text: 'Successfully started tone',
+                text: 'Successfully started tone. It might take up to 7 seconds before everyone hears it.',
                 type: 'success',
                 styling: 'bootstrap3'
                 });
@@ -490,7 +703,7 @@ function priorityTone(type)
 
 // Function to check and see if there are any active tones 
 function checkTones()
-{
+{            
     $.ajax({
         type: "GET",
         url: "../actions/api.php",
@@ -499,29 +712,56 @@ function checkTones()
         },
         success: function(response) 
         {
+            var file = $(location).attr('pathname').split("/")[2]
             data = JSON.parse(response);
-            console.log(data);
 
             if (data['recurring'] == "ACTIVE")
             {
                 var tag = $('#recurringToneAudio')[0];
                 tag.play();
 
-                PNotify.removeAll();
+                priorityNotification.remove();
+                priorityNotification.open();
 
-                new PNotify({
-                title: 'Priority Traffic',
-                text: 'Priority Traffic Only',
-                type: 'error',
-                hide: false,
-                styling: 'bootstrap3',
-                buttons: {
-                    closer: false,
-                    sticker: false
+                if (file == "dispatch")
+                {
+                    $('#recurringTone').val('1');
+                    $('#recurringTone').text("Priority Tone - ACTIVE"); 
                 }
-                });
+                
+            }
+            else if (data['recurring'] == "INACTIVE")
+            {
+                priorityNotification.remove();
+                
+                if (file == "dispatch")
+                {
+                    $('#recurringTone').val('0');
+                    $('#recurringTone').text("Priority Tone"); 
+                } 
+            }
 
 
+            if (data['priority'] == "ACTIVE")
+            {
+                var tag = $('#priorityToneAudio')[0];
+                if (document.cookie.indexOf('priority=') == '-1'){
+                    document.cookie = "priority=played;";
+                    tag.play();
+
+                    $('#priorityTone').val('1');
+                    $('#priorityTone').text("10-3 Tone - ACTIVE"); 
+                } else {
+                    //Do nothing
+                }
+            }
+            else if (data['priority'] == "INACTIVE")
+            {
+                // Make sure the played cookie is unset
+                document.cookie = "priority=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+                $('#priorityTone').val('0');
+                $('#priorityTone').text("10-3 Tone");
+                 
             }
 
             setTimeout(checkTones, 7000);        
@@ -533,3 +773,78 @@ function checkTones()
         
     })
 }   
+
+function responderChangeStatus(element)
+{
+    statusInit = element.className;
+    var status = element.value;
+    
+    //If a user has a space in their username, it'll cause some problems. First, we need to split the string by spaces which will generate
+    // an array. Then, we need to remove the first item from the array which is presumably an "action". Then, we join the array again via spaces
+    unit = statusInit.split(" "); 
+    unit.shift();
+    unit.shift();
+    unit = unit.join(' ');
+
+
+    $.ajax({
+        type: "POST",
+        url: "../actions/api.php",
+        data: {
+            changeStatus: 'yes',
+            unit: unit,
+            status: status
+        },
+        success: function(response) 
+        {
+        console.log(response);
+        if (response == "SUCCESS")
+        {
+            new PNotify({
+            title: 'Success',
+            text: 'Successfully modified status',
+            type: 'success',
+            styling: 'bootstrap3'
+        }); 
+        
+        $('#statusSelect').val('').selectpicker('refresh');
+
+        }
+        
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown)
+        {
+        console.log("Error");
+        }
+        
+    }); 
+}
+
+function getMyRank(id)
+{
+    console.log(id);
+
+    $.ajax({
+        type: "GET",
+        url: "../actions/profileActions.php",
+        data: {
+            getMyRank: 'yes',
+            unit: id
+        },
+        success: function(response) 
+        {
+        console.log(response);
+
+            $("#my_rank option").filter(function() {
+                return $.trim($(this).text()) == response
+            }).prop('selected', true);
+
+            $("#my_rank").selectpicker('refresh');
+
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown)
+        {
+        console.log("Error");
+        }     
+    }); 
+}
